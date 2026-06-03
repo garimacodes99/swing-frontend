@@ -1,0 +1,74 @@
+# =========================================================
+# PYTHON
+# =========================================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Environment variables
+.env
+.env.*
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Pytest / type cache
+.pytest_cache/
+.mypy_cache/
+
+# =========================================================
+# NODE / FRONTEND
+# =========================================================
+
+node_modules/
+dist/
+build/
+.vite/
+
+# Generated analysis results
+backend/output/
+frontend/public/close/
+frontend/public/data/scores.json
+
+# Market/cache data
+backend/utils/data_store/
+*.parquet
+
+# =========================================================
+# LOGS
+# =========================================================
+
+*.log
+logs/
+
+# =========================================================
+# IDE / EDITOR
+# =========================================================
+
+.vscode/
+.idea/
+
+# =========================================================
+# OS FILES
+# =========================================================
+
+.DS_Store
+Thumbs.db
+
+# =========================================================
+# TEMP FILES
+# =========================================================
+
+*.tmp
+*.temp
+*.bak
+.cache/
+
+# But keep important universe files
+!backend/universe/*.csv
