@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef, useCallback } from "react";
+=import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useSnapshotStore } from "./store/snapshotStore";
 import {
   Calendar, Search, Download, ChevronDown,
@@ -14,7 +14,7 @@ import {
 import type { SortingState } from "@tanstack/react-table";
 
 // ── Import Supabase services ──
-import { fetchFinalSnapshot, type FinalSnapshotRow } from "./services/dataService";
+import { fetchFinalSnapshot, type StockMetric } from "./services/dataService";
 
 /* ────────────────────────────────────────────────────────────
    TAG BADGE — compact pill with color coding
@@ -84,20 +84,11 @@ const FilterSelect = ({ label, value, onChange, options }: {
    MAIN TERMINAL COMPONENT
    ──────────────────────────────────────────────────────────── */
 
-// ── Market cap classification by tags ──
-const getMarketCapFromTags = (tagList: string[]): string => {
-  if (tagList.includes('LCAP')) return 'Large';
-  if (tagList.includes('MCAP')) return 'Mid';
-  if (tagList.includes('SCAP')) return 'Small';
-  if (tagList.includes('MICAP')) return 'Micro';
-  return 'Unknown';
-};
-
-const columnHelper = createColumnHelper<FinalSnapshotRow>();
+const columnHelper = createColumnHelper<StockMetric>();
 
 export default function SwingTerminalDark() {
   // ── State for Supabase data ──
-  const [allData, setAllData] = useState<FinalSnapshotRow[]>([]);
+  const [allData, setAllData] = useState<StockMetric[]>([]);
   const [dates, setDates] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
@@ -105,23 +96,29 @@ export default function SwingTerminalDark() {
   // Filter State
   const [searchTerm, setSearchTerm] = useState("");
   const [minScore, setMinScore] = useState("");
+  const [minHealth, setMinHealth] = useState("");
+  const [minRsi, setMinRsi] = useState("");
+  const [maxRsi, setMaxRsi] = useState("");
   const [minDist, setMinDist] = useState("");
   const [maxDist, setMaxDist] = useState("");
   const [rsiZone, setRsiZone] = useState("All");
   const [marketCap, setMarketCap] = useState("All");
   const [trend, setTrend] = useState("All");
   const [setupFilter, setSetupFilter] = useState("All");
+  const [volumeStrength, setVolumeStrength] = useState("All");
+  const [momentumStatus, setMomentumStatus] = useState("All");
+  const [distanceStatus, setDistanceStatus] = useState("All");
   const [tagsInput, setTagsInput] = useState("");
   const [sorting, setSorting] = useState<SortingState>([{ id: 'swing_score', desc: true }]);
 
   const [isCalOpen, setIsCalOpen] = useState(false);
   const calRef = useRef<HTMLDivElement>(null);
 
-  const hasActiveFilters = searchTerm || minScore || minDist || maxDist || rsiZone !== "All" || marketCap !== "All" || trend !== "All" || setupFilter !== "All" || tagsInput;
+  const hasActiveFilters = searchTerm || minScore || minHealth || minRsi || maxRsi || minDist || maxDist || rsiZone !== "All" || marketCap !== "All" || trend !== "All" || setupFilter !== "All" || volumeStrength !== "All" || momentumStatus !== "All" || distanceStatus !== "All" || tagsInput;
 
   const resetFilters = useCallback(() => {
-    setSearchTerm(""); setMinScore(""); setMinDist(""); setMaxDist("");
-    setRsiZone("All"); setMarketCap("All"); setTrend("All"); setSetupFilter("All"); setTagsInput("");
+    setSearchTerm(""); setMinScore(""); setMinHealth(""); setMinRsi(""); setMaxRsi(""); setMinDist(""); setMaxDist("");
+    setRsiZone("All"); setMarketCap("All"); setTrend("All"); setSetupFilter("All"); setVolumeStrength("All"); setMomentumStatus("All"); setDistanceStatus("All"); setTagsInput("");
   }, []);
 
   // ── Load data from Supabase ──
@@ -132,18 +129,17 @@ export default function SwingTerminalDark() {
         setAllData(data);
         
         // Extract unique dates and sort
-        const uniqueDates = [...new Set(data.map(d => d.date))].sort().reverse();
+        const uniqueDates = [...new Set(data.map(d => d.run_date))].sort().reverse();
         setDates(uniqueDates);
         
         // Set latest date as default
         if (uniqueDates.length > 0 && !selectedDate) {
           setSelectedDate(uniqueDates[0]);
-          console.log("Loaded data from Supabase. Latest date:", uniqueDates[0]);
+          console.log("Loaded data. Latest date:", uniqueDates[0]);
         }
       })
       .catch(err => {
-        console.error("Error loading data from Supabase:", err);
-        // Fallback: show empty state
+        console.error("Error loading data:", err);
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -151,7 +147,7 @@ export default function SwingTerminalDark() {
   // ── Filter data by selected date ──
   const filteredByDate = useMemo(() => {
     if (!selectedDate) return allData;
-    return allData.filter(row => row.date === selectedDate);
+    return allData.filter(row => row.run_date === selectedDate);
   }, [allData, selectedDate]);
 
   // ── Apply all filters ──
@@ -163,13 +159,20 @@ export default function SwingTerminalDark() {
       // Score
       if (minScore && (row.swing_score || 0) < Number(minScore)) return false;
 
+      // Health
+      if (minHealth && (row.health_score || 0) < Number(minHealth)) return false;
+
+      // RSI Range
+      if (minRsi && (row.rsi_14 || 0) < Number(minRsi)) return false;
+      if (maxRsi && (row.rsi_14 || 0) > Number(maxRsi)) return false;
+
       // Distance
-      if (minDist && (row.entry_close || 0) < Number(minDist)) return false;
-      if (maxDist && (row.entry_close || 0) > Number(maxDist)) return false;
+      if (minDist && (row.distance_pct || 0) < Number(minDist)) return false;
+      if (maxDist && (row.distance_pct || 0) > Number(maxDist)) return false;
 
       // RSI Zone
       if (rsiZone !== "All") {
-        const rsi = row.rsi || 0;
+        const rsi = row.rsi_14 || 0;
         if (rsiZone === "Healthy" && (rsi < 40 || rsi > 60)) return false;
         if (rsiZone === "Oversold" && rsi >= 40) return false;
         if (rsiZone === "Overbought" && rsi <= 60) return false;
@@ -179,11 +182,20 @@ export default function SwingTerminalDark() {
       if (trend !== "All" && row.trend_status !== trend) return false;
 
       // Setup
-      if (setupFilter !== "All" && row.swing_label !== setupFilter) return false;
+      if (setupFilter !== "All" && row.setup_type !== setupFilter) return false;
+
+      // Volume Strength
+      if (volumeStrength !== "All" && row.volume_strength !== volumeStrength) return false;
+
+      // Momentum Status
+      if (momentumStatus !== "All" && row.momentum_status !== momentumStatus) return false;
+
+      // Distance Status
+      if (distanceStatus !== "All" && row.distance_status !== distanceStatus) return false;
 
       return true;
     });
-  }, [filteredByDate, searchTerm, minScore, minDist, maxDist, rsiZone, trend, setupFilter]);
+  }, [filteredByDate, searchTerm, minScore, minHealth, minRsi, maxRsi, minDist, maxDist, rsiZone, trend, setupFilter, volumeStrength, momentumStatus, distanceStatus]);
 
   // ── Score distribution for display ──
   const scoreCounts = useMemo(() => {
@@ -199,8 +211,10 @@ export default function SwingTerminalDark() {
   const allUniqueTags = useMemo(() => {
     const tags = new Set<string>();
     filteredData.forEach(row => {
-      // Parse tags if they're comma-separated or just use swing_label
-      if (row.swing_label) tags.add(row.swing_label);
+      if (row.tags) {
+        const tagList = row.tags.split(",").map(t => t.trim()).filter(Boolean);
+        tagList.forEach(tag => tags.add(tag));
+      }
     });
     return Array.from(tags);
   }, [filteredData]);
@@ -217,10 +231,15 @@ export default function SwingTerminalDark() {
           </div>
         ),
       }),
-      columnHelper.accessor("entry_close", {
+      columnHelper.accessor("ltp", {
         header: "LTP",
         size: 90,
         cell: info => <span className="font-mono">{(info.getValue() || 0).toFixed(2)}</span>,
+      }),
+      columnHelper.accessor("health_score", {
+        header: "Health",
+        size: 80,
+        cell: info => <span className="font-mono text-blue-300">{info.getValue() || "N/A"}</span>,
       }),
       columnHelper.accessor("swing_score", {
         header: "Swing Score",
@@ -241,7 +260,7 @@ export default function SwingTerminalDark() {
         size: 100,
         cell: info => <span className="font-mono text-slate-400">{(info.getValue() || 0).toFixed(2)}</span>,
       }),
-      columnHelper.accessor("rsi", {
+      columnHelper.accessor("rsi_14", {
         header: "RSI_14",
         size: 90,
         cell: info => {
@@ -254,6 +273,15 @@ export default function SwingTerminalDark() {
           return <span className={`font-mono ${color}`}>{rsi.toFixed(1)}</span>;
         },
       }),
+      columnHelper.accessor("momentum_status", {
+        header: "Momentum",
+        size: 110,
+        cell: info => {
+          const status = info.getValue() || "NEUTRAL";
+          const color = status === "Bullish" ? "text-green-400" : status === "Bearish" ? "text-red-400" : "text-slate-400";
+          return <span className={`font-mono font-semibold ${color}`}>{status}</span>;
+        },
+      }),
       columnHelper.accessor("trend_status", {
         header: "Trend",
         size: 100,
@@ -263,12 +291,63 @@ export default function SwingTerminalDark() {
           return <span className={`font-mono font-semibold ${color}`}>{trend}</span>;
         },
       }),
-      columnHelper.accessor("swing_label", {
+      columnHelper.accessor("weighted_avg", {
+        header: "W.Avg",
+        size: 100,
+        cell: info => <span className="font-mono text-slate-400">{(info.getValue() || 0).toFixed(2)}</span>,
+      }),
+      columnHelper.accessor("distance_pct", {
+        header: "Dist %",
+        size: 90,
+        cell: info => <span className="font-mono text-slate-300">{(info.getValue() || 0).toFixed(2)}</span>,
+      }),
+      columnHelper.accessor("distance_status", {
+        header: "Dist Status",
+        size: 110,
+        cell: info => {
+          const status = info.getValue() || "NEUTRAL";
+          const color = status && status.includes("Favorable") ? "text-green-400" : status && status.includes("Unfavorable") ? "text-red-400" : "text-slate-400";
+          return <span className={`font-mono text-xs ${color}`}>{status}</span>;
+        },
+      }),
+      columnHelper.accessor("current_volume", {
+        header: "Vol",
+        size: 100,
+        cell: info => <span className="font-mono text-slate-400">{((info.getValue() || 0) / 1e6).toFixed(1)}M</span>,
+      }),
+      columnHelper.accessor("relative_volume", {
+        header: "Rel Vol",
+        size: 90,
+        cell: info => <span className="font-mono text-slate-300">{(info.getValue() || 0).toFixed(2)}</span>,
+      }),
+      columnHelper.accessor("volume_strength", {
+        header: "Vol Strength",
+        size: 110,
+        cell: info => {
+          const strength = info.getValue() || "NORMAL";
+          const color = strength === "HIGH" ? "text-green-400" : strength === "VERY_HIGH" ? "text-green-500" : "text-slate-400";
+          return <span className={`font-mono text-xs font-semibold ${color}`}>{strength}</span>;
+        },
+      }),
+      columnHelper.accessor("setup_type", {
         header: "Setup",
         size: 140,
         cell: info => <TagPill label={info.getValue() || "NEUTRAL"} />,
       }),
-      columnHelper.accessor("date", {
+      columnHelper.accessor("tags", {
+        header: "Tags",
+        size: 150,
+        cell: info => {
+          const tagsStr = info.getValue() || "";
+          const tagList = tagsStr.split(",").filter(Boolean).map(t => t.trim());
+          return (
+            <div className="flex gap-1 flex-wrap">
+              {tagList.map((tag: string) => <TagPill key={tag} label={tag} />)}
+            </div>
+          );
+        },
+      }),
+      columnHelper.accessor("run_date", {
         header: "Date",
         size: 110,
         cell: info => <span className="font-mono text-slate-500 text-xs">{info.getValue()}</span>,
@@ -289,9 +368,9 @@ export default function SwingTerminalDark() {
   // ── Export functionality ──
   const handleExport = useCallback(() => {
     const csv = [
-      ["Symbol", "LTP", "Swing Score", "SMA50", "SMA200", "RSI14", "Trend", "Setup", "Date"].join(","),
+      ["Symbol", "LTP", "Health", "Swing Score", "SMA50", "SMA200", "RSI14", "Momentum", "Trend", "W.Avg", "Dist%", "Dist Status", "Volume", "Rel Vol", "Vol Strength", "Setup", "Tags", "Date"].join(","),
       ...filteredData.map(row =>
-        [row.ticker, row.entry_close, row.swing_score, row.sma_50, row.sma_200, row.rsi, row.trend_status, row.swing_label, row.date].join(",")
+        [row.ticker, row.ltp, row.health_score, row.swing_score, row.sma_50, row.sma_200, row.rsi_14, row.momentum_status, row.trend_status, row.weighted_avg, row.distance_pct, row.distance_status, row.current_volume, row.relative_volume, row.volume_strength, row.setup_type, (row.tags || "").replace(/,/g, ";"), row.run_date].join(",")
       ),
     ].join("\n");
 
@@ -360,7 +439,7 @@ export default function SwingTerminalDark() {
             </button>
 
             {isCalOpen && (
-              <div ref={calRef} className="absolute right-0 mt-2 bg-slate-900 border border-slate-700 rounded-lg p-4 z-50 shadow-lg w-72">
+              <div ref={calRef} className="absolute right-0 mt-2 bg-slate-900 border border-slate-700 rounded-lg p-4 z-50 shadow-lg w-80">
                 <div className="text-xs font-mono text-slate-400 mb-3 uppercase tracking-wider">
                   {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 </div>
@@ -371,21 +450,17 @@ export default function SwingTerminalDark() {
                   ))}
                 </div>
 
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-7 gap-2 mb-4">
                   {calendarData.map((day, i) => {
-                    const dStr = new Date().toISOString().split("T")[0];
-                    const isSel = false;
-                    const isAvail = dates.length > 0;
-
                     return (
-                      <button key={i} onClick={() => { if (isAvail && day.isCurrentMonth) { setIsCalOpen(false); } }}
-                        className={`py-1.5 rounded text-center transition-all text-[11px] ${isSel ? 'bg-blue-600 text-white font-bold' : isAvail && day.isCurrentMonth ? 'hover:bg-slate-700/50 text-slate-300' : 'opacity-15 cursor-not-allowed'}`}
+                      <button key={i}
+                        className={`py-1.5 rounded text-center transition-all text-[11px] opacity-30 cursor-not-allowed`}
                       >{day.date}</button>
                     );
                   })}
                 </div>
 
-                <div className="mt-4 border-t border-slate-700 pt-3">
+                <div className="border-t border-slate-700 pt-3">
                   <div className="text-[10px] font-mono text-slate-500 mb-2 uppercase">Available Dates ({dates.length}):</div>
                   <div className="max-h-64 overflow-y-auto space-y-1">
                     {dates.length > 0 ? (
@@ -430,13 +505,19 @@ export default function SwingTerminalDark() {
 
           <div className="h-5 w-px bg-[#1c2030]" />
 
+          <FilterInput label="Score" value={minScore} onChange={setMinScore} placeholder="5" type="number" width="w-14" />
+
+          <div className="h-5 w-px bg-[#1c2030]" />
+
+          <FilterInput label="Health" value={minHealth} onChange={setMinHealth} placeholder="50" type="number" width="w-14" />
+
+          <div className="h-5 w-px bg-[#1c2030]" />
+
           <div className="flex items-center gap-2">
-            <FilterInput label="Score" value={minScore} onChange={setMinScore} placeholder="5" type="number" width="w-16" />
-            {minScore && !isNaN(Number(minScore)) && (
-              <span className="bg-slate-800 text-blue-400 font-mono text-xs px-2 py-1 rounded-md border border-slate-700/60 shadow-sm ml-1">
-                ({Object.entries(scoreCounts).reduce((acc, [score, count]) => Number(score) >= Number(minScore) ? acc + count : acc, 0)})
-              </span>
-            )}
+            <span className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider whitespace-nowrap">RSI</span>
+            <input type="number" className="bg-slate-800 border border-slate-700/60 rounded-md outline-none px-2.5 py-1.5 w-12 text-slate-200 font-mono text-[11px] text-center placeholder:text-slate-600" placeholder="Min" value={minRsi} onChange={e => setMinRsi(e.target.value)} />
+            <span className="text-slate-600 text-[10px]">to</span>
+            <input type="number" className="bg-slate-800 border border-slate-700/60 rounded-md outline-none px-2.5 py-1.5 w-12 text-slate-200 font-mono text-[11px] text-center placeholder:text-slate-600" placeholder="Max" value={maxRsi} onChange={e => setMaxRsi(e.target.value)} />
           </div>
 
           <div className="h-5 w-px bg-[#1c2030]" />
@@ -447,12 +528,29 @@ export default function SwingTerminalDark() {
 
           <div className="h-5 w-px bg-[#1c2030]" />
 
+          <FilterSelect label="Momentum" value={momentumStatus} onChange={setMomentumStatus} options={[
+            { value: "All", label: "ALL" },
+            { value: "Bullish", label: "BULLISH" },
+            { value: "Bearish", label: "BEARISH" }
+          ]} />
+
+          <div className="h-5 w-px bg-[#1c2030]" />
+
           <FilterSelect label="Setup" value={setupFilter} onChange={setSetupFilter} options={[
             { value: "All", label: "ALL SETUPS" },
             { value: "HIGH_CONVICTION", label: "HIGH CONVICTION" },
             { value: "WATCHLIST", label: "WATCHLIST" },
             { value: "MOMENTUM_SETUP", label: "MOMENTUM SETUP" },
             { value: "WEAK_SETUP", label: "WEAK SETUP" }
+          ]} />
+
+          <div className="h-5 w-px bg-[#1c2030]" />
+
+          <FilterSelect label="Vol Strength" value={volumeStrength} onChange={setVolumeStrength} options={[
+            { value: "All", label: "ALL" },
+            { value: "NORMAL", label: "NORMAL" },
+            { value: "HIGH", label: "HIGH" },
+            { value: "VERY_HIGH", label: "VERY HIGH" }
           ]} />
 
           {hasActiveFilters && (
@@ -468,7 +566,7 @@ export default function SwingTerminalDark() {
 
       {/* ─── TABLE ─── */}
       <div className="flex-1 overflow-auto bg-slate-950 relative">
-        <table className="w-full text-left border-collapse min-w-[1600px]">
+        <table className="w-full text-left border-collapse min-w-[2400px]">
           <thead className="bg-slate-900 sticky top-0 z-20">
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id} className="border-b-2 border-slate-800">
@@ -521,7 +619,7 @@ export default function SwingTerminalDark() {
         <span>SwingLogic Quantitative Terminal v2.4</span>
         <div className="flex items-center gap-4">
           <span>{filteredData.length} <span className="text-slate-500">signals</span></span>
-          <span>{allUniqueTags.length} <span className="text-slate-500">setups indexed</span></span>
+          <span>{allUniqueTags.length} <span className="text-slate-500">tags indexed</span></span>
         </div>
       </div>
     </div>
