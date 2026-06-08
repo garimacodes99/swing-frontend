@@ -127,20 +127,14 @@ export default function SwingTerminalDark() {
     fetchFinalSnapshot()
       .then(data => {
         setAllData(data);
-        
-        // Extract unique dates and sort
         const uniqueDates = [...new Set(data.map(d => d.run_date))].sort().reverse();
         setDates(uniqueDates);
-        
-        // Set latest date as default
         if (uniqueDates.length > 0 && !selectedDate) {
           setSelectedDate(uniqueDates[0]);
           console.log("Loaded data. Latest date:", uniqueDates[0]);
         }
       })
-      .catch(err => {
-        console.error("Error loading data:", err);
-      })
+      .catch(err => console.error("Error loading data:", err))
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -153,51 +147,29 @@ export default function SwingTerminalDark() {
   // ── Apply all filters ──
   const filteredData = useMemo(() => {
     return filteredByDate.filter(row => {
-      // Search
       if (searchTerm && !row.ticker.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-
-      // Score
       if (minScore && (row.swing_score || 0) < Number(minScore)) return false;
-
-      // Health
       if (minHealth && (row.health_score || 0) < Number(minHealth)) return false;
-
-      // RSI Range
       if (minRsi && (row.rsi_14 || 0) < Number(minRsi)) return false;
       if (maxRsi && (row.rsi_14 || 0) > Number(maxRsi)) return false;
-
-      // Distance
       if (minDist && (row.distance_pct || 0) < Number(minDist)) return false;
       if (maxDist && (row.distance_pct || 0) > Number(maxDist)) return false;
-
-      // RSI Zone
       if (rsiZone !== "All") {
         const rsi = row.rsi_14 || 0;
         if (rsiZone === "Healthy" && (rsi < 40 || rsi > 60)) return false;
         if (rsiZone === "Oversold" && rsi >= 40) return false;
         if (rsiZone === "Overbought" && rsi <= 60) return false;
       }
-
-      // Trend
       if (trend !== "All" && row.trend_status !== trend) return false;
-
-      // Setup
       if (setupFilter !== "All" && row.setup_type !== setupFilter) return false;
-
-      // Volume Strength
       if (volumeStrength !== "All" && row.volume_strength !== volumeStrength) return false;
-
-      // Momentum Status
       if (momentumStatus !== "All" && row.momentum_status !== momentumStatus) return false;
-
-      // Distance Status
       if (distanceStatus !== "All" && row.distance_status !== distanceStatus) return false;
-
       return true;
     });
   }, [filteredByDate, searchTerm, minScore, minHealth, minRsi, maxRsi, minDist, maxDist, rsiZone, trend, setupFilter, volumeStrength, momentumStatus, distanceStatus]);
 
-  // ── Score distribution for display ──
+  // ── Score distribution ──
   const scoreCounts = useMemo(() => {
     const counts: Record<number, number> = {};
     filteredByDate.forEach(row => {
@@ -219,17 +191,19 @@ export default function SwingTerminalDark() {
     return Array.from(tags);
   }, [filteredData]);
 
-  // ── Table columns ──
+  // ── TABLE COLUMNS - CORRECT ORDER ──
   const columns = useMemo(
     () => [
+      columnHelper.display({
+        id: "sno",
+        header: "S.No",
+        size: 60,
+        cell: (info) => <span className="font-mono text-slate-400">{info.row.index + 1}</span>,
+      }),
       columnHelper.accessor("ticker", {
         header: "Symbol",
         size: 100,
-        cell: info => (
-          <div className="flex items-center gap-2">
-            <span className="font-mono font-bold text-blue-300">{info.getValue()}</span>
-          </div>
-        ),
+        cell: info => <span className="font-mono font-bold text-blue-300">{info.getValue()}</span>,
       }),
       columnHelper.accessor("ltp", {
         header: "LTP",
@@ -241,6 +215,11 @@ export default function SwingTerminalDark() {
         size: 80,
         cell: info => <span className="font-mono text-blue-300">{info.getValue() || "N/A"}</span>,
       }),
+      columnHelper.accessor("distance_pct", {
+        header: "Dist %",
+        size: 90,
+        cell: info => <span className="font-mono text-slate-300">{(info.getValue() || 0).toFixed(2)}</span>,
+      }),
       columnHelper.accessor("swing_score", {
         header: "Swing Score",
         size: 120,
@@ -249,16 +228,6 @@ export default function SwingTerminalDark() {
           const color = score >= 8 ? "text-green-400" : score >= 5 ? "text-yellow-400" : "text-red-400";
           return <span className={`font-mono font-bold ${color}`}>{score}</span>;
         },
-      }),
-      columnHelper.accessor("sma_50", {
-        header: "SMA 50",
-        size: 100,
-        cell: info => <span className="font-mono text-slate-400">{(info.getValue() || 0).toFixed(2)}</span>,
-      }),
-      columnHelper.accessor("sma_200", {
-        header: "SMA 200",
-        size: 100,
-        cell: info => <span className="font-mono text-slate-400">{(info.getValue() || 0).toFixed(2)}</span>,
       }),
       columnHelper.accessor("rsi_14", {
         header: "RSI_14",
@@ -296,11 +265,6 @@ export default function SwingTerminalDark() {
         size: 100,
         cell: info => <span className="font-mono text-slate-400">{(info.getValue() || 0).toFixed(2)}</span>,
       }),
-      columnHelper.accessor("distance_pct", {
-        header: "Dist %",
-        size: 90,
-        cell: info => <span className="font-mono text-slate-300">{(info.getValue() || 0).toFixed(2)}</span>,
-      }),
       columnHelper.accessor("distance_status", {
         header: "Dist Status",
         size: 110,
@@ -314,11 +278,6 @@ export default function SwingTerminalDark() {
         header: "Vol",
         size: 100,
         cell: info => <span className="font-mono text-slate-400">{((info.getValue() || 0) / 1e6).toFixed(1)}M</span>,
-      }),
-      columnHelper.accessor("relative_volume", {
-        header: "Rel Vol",
-        size: 90,
-        cell: info => <span className="font-mono text-slate-300">{(info.getValue() || 0).toFixed(2)}</span>,
       }),
       columnHelper.accessor("volume_strength", {
         header: "Vol Strength",
@@ -347,11 +306,6 @@ export default function SwingTerminalDark() {
           );
         },
       }),
-      columnHelper.accessor("run_date", {
-        header: "Date",
-        size: 110,
-        cell: info => <span className="font-mono text-slate-500 text-xs">{info.getValue()}</span>,
-      }),
     ],
     [],
   );
@@ -365,12 +319,11 @@ export default function SwingTerminalDark() {
     getSortedRowModel: getSortedRowModel(),
   });
 
-  // ── Export functionality ──
   const handleExport = useCallback(() => {
     const csv = [
-      ["Symbol", "LTP", "Health", "Swing Score", "SMA50", "SMA200", "RSI14", "Momentum", "Trend", "W.Avg", "Dist%", "Dist Status", "Volume", "Rel Vol", "Vol Strength", "Setup", "Tags", "Date"].join(","),
-      ...filteredData.map(row =>
-        [row.ticker, row.ltp, row.health_score, row.swing_score, row.sma_50, row.sma_200, row.rsi_14, row.momentum_status, row.trend_status, row.weighted_avg, row.distance_pct, row.distance_status, row.current_volume, row.relative_volume, row.volume_strength, row.setup_type, (row.tags || "").replace(/,/g, ";"), row.run_date].join(",")
+      ["S.No", "Symbol", "LTP", "Health", "Dist%", "Swing Score", "RSI14", "Momentum", "Trend", "W.Avg", "Dist Status", "Volume", "Vol Strength", "Setup", "Tags"].join(","),
+      ...filteredData.map((row, idx) =>
+        [idx + 1, row.ticker, row.ltp, row.health_score, row.distance_pct, row.swing_score, row.rsi_14, row.momentum_status, row.trend_status, row.weighted_avg, row.distance_status, row.current_volume, row.volume_strength, row.setup_type, (row.tags || "").replace(/,/g, ";")].join(",")
       ),
     ].join("\n");
 
@@ -382,7 +335,6 @@ export default function SwingTerminalDark() {
     link.click();
   }, [filteredData, selectedDate]);
 
-  // ── Calendar ──
   const calendarData = useMemo(() => {
     const today = new Date();
     const year = today.getFullYear();
@@ -440,26 +392,6 @@ export default function SwingTerminalDark() {
 
             {isCalOpen && (
               <div ref={calRef} className="absolute right-0 mt-2 bg-slate-900 border border-slate-700 rounded-lg p-4 z-50 shadow-lg w-80">
-                <div className="text-xs font-mono text-slate-400 mb-3 uppercase tracking-wider">
-                  {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-                </div>
-
-                <div className="grid grid-cols-7 gap-2 mb-3">
-                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
-                    <div key={d} className="text-center text-[10px] font-mono text-slate-600 font-bold">{d}</div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-7 gap-2 mb-4">
-                  {calendarData.map((day, i) => {
-                    return (
-                      <button key={i}
-                        className={`py-1.5 rounded text-center transition-all text-[11px] opacity-30 cursor-not-allowed`}
-                      >{day.date}</button>
-                    );
-                  })}
-                </div>
-
                 <div className="border-t border-slate-700 pt-3">
                   <div className="text-[10px] font-mono text-slate-500 mb-2 uppercase">Available Dates ({dates.length}):</div>
                   <div className="max-h-64 overflow-y-auto space-y-1">
@@ -491,7 +423,6 @@ export default function SwingTerminalDark() {
       {/* ─── FILTER BAR ─── */}
       <div className="bg-slate-900 border-b border-slate-800 px-5 py-2.5 shrink-0 overflow-x-auto">
         <div className="flex items-center gap-5 min-w-max">
-          {/* Search */}
           <div className="flex items-center gap-2 bg-slate-800 border border-slate-700/60 rounded-md px-3 py-1.5 focus-within:border-blue-500/50 transition-all w-44">
             <Search size={13} className="text-slate-500 shrink-0" />
             <input
@@ -528,29 +459,12 @@ export default function SwingTerminalDark() {
 
           <div className="h-5 w-px bg-[#1c2030]" />
 
-          <FilterSelect label="Momentum" value={momentumStatus} onChange={setMomentumStatus} options={[
-            { value: "All", label: "ALL" },
-            { value: "Bullish", label: "BULLISH" },
-            { value: "Bearish", label: "BEARISH" }
-          ]} />
-
-          <div className="h-5 w-px bg-[#1c2030]" />
-
           <FilterSelect label="Setup" value={setupFilter} onChange={setSetupFilter} options={[
             { value: "All", label: "ALL SETUPS" },
             { value: "HIGH_CONVICTION", label: "HIGH CONVICTION" },
             { value: "WATCHLIST", label: "WATCHLIST" },
             { value: "MOMENTUM_SETUP", label: "MOMENTUM SETUP" },
             { value: "WEAK_SETUP", label: "WEAK SETUP" }
-          ]} />
-
-          <div className="h-5 w-px bg-[#1c2030]" />
-
-          <FilterSelect label="Vol Strength" value={volumeStrength} onChange={setVolumeStrength} options={[
-            { value: "All", label: "ALL" },
-            { value: "NORMAL", label: "NORMAL" },
-            { value: "HIGH", label: "HIGH" },
-            { value: "VERY_HIGH", label: "VERY HIGH" }
           ]} />
 
           {hasActiveFilters && (
@@ -566,7 +480,7 @@ export default function SwingTerminalDark() {
 
       {/* ─── TABLE ─── */}
       <div className="flex-1 overflow-auto bg-slate-950 relative">
-        <table className="w-full text-left border-collapse min-w-[2400px]">
+        <table className="w-full text-left border-collapse min-w-[2000px]">
           <thead className="bg-slate-900 sticky top-0 z-20">
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id} className="border-b-2 border-slate-800">
