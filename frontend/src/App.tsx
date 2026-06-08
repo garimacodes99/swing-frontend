@@ -1,4 +1,4 @@
-=import { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useSnapshotStore } from "./store/snapshotStore";
 import {
   Calendar, Search, Download, ChevronDown,
