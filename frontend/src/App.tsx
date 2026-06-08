@@ -334,7 +334,7 @@ export default function SwingTerminalDark() {
   if (isLoading) {
     return (
       <div className="h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-slate-400 font-mono">Loading data from Supabase...</div>
+        <div className="text-slate-400 font-mono">Loading data...</div>
       </div>
     );
   }
@@ -346,7 +346,7 @@ export default function SwingTerminalDark() {
         <div className="flex items-center gap-3">
           <BarChart3 size={20} className="text-blue-400" />
           <h1 className="text-sm font-bold uppercase tracking-widest text-slate-100">Swing Terminal</h1>
-          <span className="text-xs text-slate-600 font-mono">v2.4 • Supabase</span>
+          <span className="text-xs text-slate-600 font-mono">v2.4</span>
         </div>
 
         <div className="flex items-center gap-3">
@@ -386,17 +386,21 @@ export default function SwingTerminalDark() {
                 </div>
 
                 <div className="mt-4 border-t border-slate-700 pt-3">
-                  <div className="text-[10px] font-mono text-slate-500 mb-2 uppercase">Available Dates:</div>
-                  <div className="max-h-32 overflow-y-auto">
-                    {dates.map(date => (
-                      <button
-                        key={date}
-                        onClick={() => { setSelectedDate(date); setIsCalOpen(false); }}
-                        className={`block w-full text-left px-2 py-1.5 text-[11px] font-mono rounded transition-all ${selectedDate === date ? 'bg-blue-600/30 text-blue-300 border border-blue-500/50' : 'hover:bg-slate-700/30 text-slate-400'}`}
-                      >
-                        {date}
-                      </button>
-                    ))}
+                  <div className="text-[10px] font-mono text-slate-500 mb-2 uppercase">Available Dates ({dates.length}):</div>
+                  <div className="max-h-64 overflow-y-auto space-y-1">
+                    {dates.length > 0 ? (
+                      dates.map(date => (
+                        <button
+                          key={date}
+                          onClick={() => { setSelectedDate(date); setIsCalOpen(false); }}
+                          className={`block w-full text-left px-3 py-2 text-[11px] font-mono rounded transition-all ${selectedDate === date ? 'bg-blue-600/40 text-blue-300 border border-blue-500/50' : 'hover:bg-slate-700/40 text-slate-300 border border-slate-700/30'}`}
+                        >
+                          {date}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="text-slate-500 text-[10px] px-3 py-2">No dates available</div>
+                    )}
                   </div>
                 </div>
               </div>
