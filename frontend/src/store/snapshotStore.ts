@@ -1,55 +1,53 @@
 import { create } from "zustand";
 import { fetchFinalSnapshot, type FinalSnapshotRow } from "../services/dataService";
 
-/**
- * CloseRow - Direct mapping from Supabase FinalSnapshotRow
- * No transformation needed, use data as-is
- */
-export type CloseRow = FinalSnapshotRow;
-
-type CloseState = {
-  rows: CloseRow[];
-  symbol: string;
+interface SnapshotState {
+  rows: FinalSnapshotRow[];
   loading: boolean;
-  load: (symbol?: string) => Promise<void>;
-};
+  load: (date?: string) => Promise<void>;
+}
 
-export const useCloseStore = create<CloseState>((set) => ({
+export const useSnapshotStore = create<SnapshotState>((set) => ({
   rows: [],
-  symbol: "INFY",
   loading: false,
 
-  load: async (symbol = "INFY") => {
+  load: async (date?: string) => {
     try {
       set({ loading: true });
 
-      // ✅ Fetch from Supabase
+      // Fetch all data from Supabase
       const allData = await fetchFinalSnapshot();
 
       if (!allData || allData.length === 0) {
         console.warn("No data returned from Supabase");
-        set({ rows: [], symbol, loading: false });
+        set({ rows: [], loading: false });
         return;
       }
 
-      // ✅ Filter by symbol (case-insensitive)
-      const filteredRows = allData.filter(
-        (r) => r.ticker.toUpperCase() === symbol.toUpperCase()
-      );
-
-      console.log(
-        `Loaded ${filteredRows.length} rows for symbol: ${symbol}`,
-        filteredRows
-      );
+      // Filter by date if provided
+      let filteredRows = allData;
+      
+      if (date) {
+        filteredRows = allData.filter(row => row.date === date);
+        console.log(`Loaded ${filteredRows.length} rows for date: ${date}`);
+      } else {
+        // If no date provided, get latest date data
+        const latestDate = [...new Set(allData.map(d => d.date))].sort().reverse()[0];
+        if (latestDate) {
+          filteredRows = allData.filter(row => row.date === latestDate);
+          console.log(`No date provided. Using latest date: ${latestDate}`);
+        }
+      }
 
       set({
         rows: filteredRows,
-        symbol: symbol.toUpperCase(),
         loading: false,
       });
+
+      console.log(`Successfully loaded ${filteredRows.length} rows from Supabase`);
     } catch (err) {
-      console.error(`Failed to load data for symbol ${symbol}:`, err);
-      set({ rows: [], symbol, loading: false });
+      console.error("Failed to load snapshot data from Supabase:", err);
+      set({ rows: [], loading: false });
     }
   },
 }));
