@@ -274,11 +274,6 @@ export default function SwingTerminalDark() {
           return <span className={`font-mono text-xs ${color}`}>{status}</span>;
         },
       }),
-      columnHelper.accessor("current_volume", {
-        header: "Vol",
-        size: 100,
-        cell: info => <span className="font-mono text-slate-400">{((info.getValue() || 0) / 1e6).toFixed(1)}M</span>,
-      }),
       columnHelper.accessor("volume_strength", {
         header: "Vol Strength",
         size: 110,
@@ -321,9 +316,9 @@ export default function SwingTerminalDark() {
 
   const handleExport = useCallback(() => {
     const csv = [
-      ["S.No", "Symbol", "LTP", "Health", "Dist%", "Swing Score", "RSI14", "Momentum", "Trend", "W.Avg", "Dist Status", "Volume", "Vol Strength", "Setup", "Tags"].join(","),
+      ["S.No", "Symbol", "LTP", "Health", "Dist%", "Swing Score", "RSI14", "Momentum", "Trend", "W.Avg", "Dist Status", "Vol Strength", "Setup", "Tags"].join(","),
       ...filteredData.map((row, idx) =>
-        [idx + 1, row.ticker, row.ltp, row.health_score, row.distance_pct, row.swing_score, row.rsi_14, row.momentum_status, row.trend_status, row.weighted_avg, row.distance_status, row.current_volume, row.volume_strength, row.setup_type, (row.tags || "").replace(/,/g, ";")].join(",")
+        [idx + 1, row.ticker, row.ltp, row.health_score, row.distance_pct, row.swing_score, row.rsi_14, row.momentum_status, row.trend_status, row.weighted_avg, row.distance_status, row.volume_strength, row.setup_type, (row.tags || "").replace(/,/g, ";")].join(",")
       ),
     ].join("\n");
 
@@ -466,6 +461,17 @@ export default function SwingTerminalDark() {
             { value: "MOMENTUM_SETUP", label: "MOMENTUM SETUP" },
             { value: "WEAK_SETUP", label: "WEAK SETUP" }
           ]} />
+
+          <div className="h-5 w-px bg-[#1c2030]" />
+
+          <FilterSelect label="Mkt Cap" value={marketCap} onChange={setMarketCap} options={[
+            { value: "All", label: "ANY" }, { value: "Large", label: "LARGE" },
+            { value: "Mid", label: "MID" }, { value: "Small", label: "SMALL" }, { value: "Micro", label: "MICRO" }
+          ]} />
+
+          <div className="h-5 w-px bg-[#1c2030]" />
+
+          <FilterInput label="Tags" value={tagsInput} onChange={setTagsInput} placeholder="N50, PHARMA" type="text" width="w-28" />
 
           {hasActiveFilters && (
             <>
