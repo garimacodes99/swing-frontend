@@ -185,17 +185,26 @@ const RsiCell = ({ rsi }: { rsi: number }) => {
 const TrendCell = ({ value }: { value: string }) => {
   const isBull = value === 'Bullish';
   const isBear = value === 'Bearish';
-  const bgColor = isBull ? 'bg-emerald-500/10 border-emerald-500/25' : isBear ? 'bg-red-500/10 border-red-500/25' : 'bg-slate-700/20 border-slate-600/20';
-  const textColor = isBull ? 'text-emerald-300' : isBear ? 'text-red-400' : 'text-slate-500';
-  const iconColor = isBull ? 'text-emerald-400' : isBear ? 'text-red-400' : 'text-slate-600';
+
+  if (isBull) return (
+    <div style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.30)' }}
+      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md">
+      <TrendingUp size={11} className="text-emerald-400 shrink-0" />
+      <span className="font-bold text-[10.5px] uppercase tracking-wider text-emerald-300">Bullish</span>
+    </div>
+  );
+  if (isBear) return (
+    <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.30)' }}
+      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md">
+      <TrendingDown size={11} className="text-red-400 shrink-0" />
+      <span className="font-bold text-[10.5px] uppercase tracking-wider text-red-400">Bearish</span>
+    </div>
+  );
   return (
-    <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border ${bgColor}`}>
-      {isBull ? <TrendingUp size={11} className={`${iconColor} shrink-0`} />
-        : isBear ? <TrendingDown size={11} className={`${iconColor} shrink-0`} />
-          : <Minus size={11} className={`${iconColor} shrink-0`} />}
-      <span className={`font-bold text-[10.5px] uppercase tracking-wider ${textColor}`}>
-        {value || 'Neutral'}
-      </span>
+    <div style={{ background: 'rgba(100,116,139,0.12)', border: '1px solid rgba(100,116,139,0.20)' }}
+      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md">
+      <Minus size={11} className="text-slate-500 shrink-0" />
+      <span className="font-bold text-[10.5px] uppercase tracking-wider text-slate-500">{value || 'Neutral'}</span>
     </div>
   );
 };
@@ -204,18 +213,29 @@ const TrendCell = ({ value }: { value: string }) => {
    VOLUME CELL
    ──────────────────────────────────────────────────────────── */
 const VolumeCell = ({ strength }: { strength: string }) => {
-  const map: Record<string, { text: string; bg: string; dot: string }> = {
-    VERY_HIGH: { text: 'text-emerald-300', bg: 'bg-emerald-500/12 border-emerald-500/30', dot: 'bg-emerald-400 shadow-emerald-400/50' },
-    HIGH:      { text: 'text-green-400',   bg: 'bg-green-500/10 border-green-500/25',     dot: 'bg-green-400 shadow-green-400/40' },
-    NORMAL:    { text: 'text-slate-400',   bg: 'bg-slate-700/20 border-slate-600/20',     dot: 'bg-slate-500' },
-    LOW:       { text: 'text-slate-600',   bg: 'bg-slate-800/30 border-slate-700/15',     dot: 'bg-slate-700' },
+  const map: Record<string, { style: React.CSSProperties; dotColor: string; textClass: string; label: string }> = {
+    VERY_HIGH: {
+      style: { background: 'rgba(16,185,129,0.13)', border: '1px solid rgba(16,185,129,0.32)' },
+      dotColor: '#34d399', textClass: 'text-emerald-300', label: 'VERY HIGH'
+    },
+    HIGH: {
+      style: { background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.28)' },
+      dotColor: '#4ade80', textClass: 'text-green-400', label: 'HIGH'
+    },
+    NORMAL: {
+      style: { background: 'rgba(71,85,105,0.20)', border: '1px solid rgba(71,85,105,0.35)' },
+      dotColor: '#94a3b8', textClass: 'text-slate-400', label: 'NORMAL'
+    },
+    LOW: {
+      style: { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.22)' },
+      dotColor: '#f87171', textClass: 'text-red-400', label: 'LOW'
+    },
   };
   const s = map[strength] || map.NORMAL;
-  const label = strength === 'VERY_HIGH' ? 'VERY HIGH' : strength || '—';
   return (
-    <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border ${s.bg}`}>
-      <div className={`w-1.5 h-1.5 rounded-full shrink-0 shadow-sm ${s.dot}`} />
-      <span className={`font-mono font-semibold text-[10.5px] uppercase tracking-wide ${s.text}`}>{label}</span>
+    <div style={s.style} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md">
+      <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: s.dotColor, flexShrink: 0 }} />
+      <span className={`font-mono font-semibold text-[10.5px] uppercase tracking-wide ${s.textClass}`}>{s.label}</span>
     </div>
   );
 };
