@@ -185,12 +185,15 @@ const RsiCell = ({ rsi }: { rsi: number }) => {
 const TrendCell = ({ value }: { value: string }) => {
   const isBull = value === 'Bullish';
   const isBear = value === 'Bearish';
+  const bgColor = isBull ? 'bg-emerald-500/10 border-emerald-500/25' : isBear ? 'bg-red-500/10 border-red-500/25' : 'bg-slate-700/20 border-slate-600/20';
+  const textColor = isBull ? 'text-emerald-300' : isBear ? 'text-red-400' : 'text-slate-500';
+  const iconColor = isBull ? 'text-emerald-400' : isBear ? 'text-red-400' : 'text-slate-600';
   return (
-    <div className="flex items-center gap-1.5">
-      {isBull ? <TrendingUp size={13} className="text-emerald-400 shrink-0" />
-        : isBear ? <TrendingDown size={13} className="text-red-400 shrink-0" />
-          : <Minus size={13} className="text-slate-500 shrink-0" />}
-      <span className={`font-semibold text-[11px] uppercase tracking-wide ${isBull ? 'text-emerald-400' : isBear ? 'text-red-400' : 'text-slate-500'}`}>
+    <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border ${bgColor}`}>
+      {isBull ? <TrendingUp size={11} className={`${iconColor} shrink-0`} />
+        : isBear ? <TrendingDown size={11} className={`${iconColor} shrink-0`} />
+          : <Minus size={11} className={`${iconColor} shrink-0`} />}
+      <span className={`font-bold text-[10.5px] uppercase tracking-wider ${textColor}`}>
         {value || 'Neutral'}
       </span>
     </div>
@@ -201,17 +204,18 @@ const TrendCell = ({ value }: { value: string }) => {
    VOLUME CELL
    ──────────────────────────────────────────────────────────── */
 const VolumeCell = ({ strength }: { strength: string }) => {
-  const map: Record<string, { color: string; dot: string }> = {
-    VERY_HIGH: { color: 'text-emerald-300', dot: 'bg-emerald-400' },
-    HIGH: { color: 'text-green-400', dot: 'bg-green-400' },
-    NORMAL: { color: 'text-slate-500', dot: 'bg-slate-600' },
-    LOW: { color: 'text-slate-500', dot: 'bg-slate-700' },
+  const map: Record<string, { text: string; bg: string; dot: string }> = {
+    VERY_HIGH: { text: 'text-emerald-300', bg: 'bg-emerald-500/12 border-emerald-500/30', dot: 'bg-emerald-400 shadow-emerald-400/50' },
+    HIGH:      { text: 'text-green-400',   bg: 'bg-green-500/10 border-green-500/25',     dot: 'bg-green-400 shadow-green-400/40' },
+    NORMAL:    { text: 'text-slate-400',   bg: 'bg-slate-700/20 border-slate-600/20',     dot: 'bg-slate-500' },
+    LOW:       { text: 'text-slate-600',   bg: 'bg-slate-800/30 border-slate-700/15',     dot: 'bg-slate-700' },
   };
   const s = map[strength] || map.NORMAL;
+  const label = strength === 'VERY_HIGH' ? 'VERY HIGH' : strength || '—';
   return (
-    <div className="flex items-center gap-1.5">
-      <div className={`w-1.5 h-1.5 rounded-full ${s.dot} shrink-0`} />
-      <span className={`font-mono text-[11px] uppercase tracking-wide ${s.color}`}>{strength || '—'}</span>
+    <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border ${s.bg}`}>
+      <div className={`w-1.5 h-1.5 rounded-full shrink-0 shadow-sm ${s.dot}`} />
+      <span className={`font-mono font-semibold text-[10.5px] uppercase tracking-wide ${s.text}`}>{label}</span>
     </div>
   );
 };
@@ -380,7 +384,7 @@ export default function SwingTerminalDark() {
       ),
     }),
     columnHelper.accessor("ticker", {
-      header: "Asset",
+      header: "Ticker",
       size: 180,
       cell: info => {
         const ticker = info.getValue();
@@ -481,7 +485,7 @@ export default function SwingTerminalDark() {
     }),
     columnHelper.display({
       id: "link",
-      header: "",
+      header: "Link",
       size: 44,
       cell: (info) => {
         const ticker = info.row.original.ticker;
@@ -491,7 +495,7 @@ export default function SwingTerminalDark() {
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center w-7 h-7 rounded-md bg-slate-800/60 border border-slate-700/40 hover:border-blue-500/50 hover:bg-blue-500/10 text-slate-600 hover:text-blue-400 transition-all group"
-            title={`Open ${ticker} on TradingView`}
+            title={`Open ${ticker} on Google Finance`}
           >
             <ExternalLink size={12} className="group-hover:scale-110 transition-transform" />
           </a>
@@ -697,7 +701,7 @@ export default function SwingTerminalDark() {
                 {hg.headers.map(header => (
                   <th
                     key={header.id}
-                    className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer hover:text-slate-300 transition-colors select-none group"
+                    className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer hover:text-slate-300 transition-colors select-none group"
                     onClick={header.column.getToggleSortingHandler()}
                     style={{ width: header.getSize() }}
                   >
