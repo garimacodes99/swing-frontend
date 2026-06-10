@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import {
   Calendar, Search, Download, ChevronDown,
-  ExternalLink, BarChart3, X, RotateCcw, Activity, Zap, TrendingUp, TrendingDown, Minus
+  ExternalLink, X, RotateCcw, Zap, TrendingUp, TrendingDown, Minus
 } from "lucide-react";
 import {
   useReactTable,
@@ -12,11 +12,10 @@ import {
 } from "@tanstack/react-table";
 import type { SortingState } from "@tanstack/react-table";
 
-// ── Import Supabase services ──
 import { fetchFinalSnapshot, type StockMetric } from "./services/dataService";
 
 /* ────────────────────────────────────────────────────────────
-   TICKER AVATAR — initials badge like in the target UI
+   TICKER AVATAR
    ──────────────────────────────────────────────────────────── */
 const avatarColors = [
   'bg-blue-600', 'bg-violet-600', 'bg-emerald-600', 'bg-amber-600',
@@ -40,7 +39,7 @@ const TickerAvatar = ({ ticker }: { ticker: string }) => {
 };
 
 /* ────────────────────────────────────────────────────────────
-   TAG BADGE — FIX #1: each tag has its own distinct color
+   TAG PILL — each tag has its own distinct color
    ──────────────────────────────────────────────────────────── */
 const tagColors: Record<string, string> = {
   LCAP:            'bg-blue-500/20 text-blue-300 border-blue-500/30',
@@ -75,6 +74,15 @@ const tagColors: Record<string, string> = {
   SCALEUP:         'bg-violet-400/20 text-violet-300 border-violet-400/30',
   URBNX:           'bg-blue-700/20 text-blue-300 border-blue-600/30',
   INDST:           'bg-orange-600/20 text-orange-300 border-orange-600/30',
+  METAL:           'bg-zinc-500/20 text-zinc-300 border-zinc-500/30',
+  ENERGY:          'bg-yellow-700/20 text-yellow-300 border-yellow-600/30',
+  CYCL:            'bg-teal-600/20 text-teal-300 border-teal-500/30',
+  RETAIL:          'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30',
+  COMMOD:          'bg-orange-700/20 text-orange-300 border-orange-600/30',
+  COMPD:           'bg-sky-700/20 text-sky-300 border-sky-600/30',
+  HROE:            'bg-emerald-700/20 text-emerald-300 border-emerald-600/30',
+  ASSETL:          'bg-violet-700/20 text-violet-300 border-violet-600/30',
+  GLOBEX:          'bg-blue-800/20 text-blue-300 border-blue-700/30',
   HIGH_CONVICTION: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
   WATCHLIST:       'bg-amber-500/20 text-amber-300 border-amber-500/30',
   MOMENTUM_SETUP:  'bg-blue-500/20 text-blue-300 border-blue-500/30',
@@ -91,7 +99,7 @@ const TagPill = ({ label }: { label: string }) => {
 };
 
 /* ────────────────────────────────────────────────────────────
-   SETUP BADGE — larger pill for setup type
+   SETUP BADGE
    ──────────────────────────────────────────────────────────── */
 const SetupBadge = ({ value }: { value: string }) => {
   const setupMap: Record<string, string> = {
@@ -116,7 +124,7 @@ const SetupBadge = ({ value }: { value: string }) => {
 };
 
 /* ────────────────────────────────────────────────────────────
-   SWING SCORE BADGE — bold number with color ring
+   SWING SCORE BADGE
    ──────────────────────────────────────────────────────────── */
 const SwingScoreBadge = ({ score }: { score: number }) => {
   const color = score >= 8
@@ -132,13 +140,12 @@ const SwingScoreBadge = ({ score }: { score: number }) => {
 };
 
 /* ────────────────────────────────────────────────────────────
-   HEALTH SCORE BADGE — FIX #2: color-coded by value range
+   HEALTH BADGE — color-coded by value range
    ──────────────────────────────────────────────────────────── */
 const HealthBadge = ({ score }: { score: number | null }) => {
   if (score === null || score === undefined)
     return <span className="text-slate-600 text-xs font-mono">—</span>;
 
-  // color + background pill so the value pops visually
   const { text, bg, border } =
     score >= 80 ? { text: 'text-emerald-300', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30' } :
     score >= 60 ? { text: 'text-amber-300',   bg: 'bg-amber-500/15',   border: 'border-amber-500/30'   } :
@@ -153,7 +160,7 @@ const HealthBadge = ({ score }: { score: number | null }) => {
 };
 
 /* ────────────────────────────────────────────────────────────
-   DIST PCT CELL — color-coded distance with status
+   DIST PCT CELL
    ──────────────────────────────────────────────────────────── */
 const DistCell = ({ pct, status }: { pct: number; status: string }) => {
   const isNeg = pct < 0;
@@ -196,9 +203,7 @@ const RsiCell = ({ rsi }: { rsi: number }) => {
 };
 
 /* ────────────────────────────────────────────────────────────
-   TREND CELL — FIX #3: "Strong Bullish" now renders green,
-   "Strong Bearish" renders red — any value containing
-   "bullish" / "bearish" is caught regardless of prefix.
+   TREND CELL
    ──────────────────────────────────────────────────────────── */
 const TrendCell = ({ value }: { value: string }) => {
   const normalized = (value || '').toLowerCase();
@@ -248,7 +253,7 @@ const TrendCell = ({ value }: { value: string }) => {
 };
 
 /* ────────────────────────────────────────────────────────────
-   VOLUME CELL — FIX #4: NORMAL is now sky-blue instead of grey
+   VOLUME CELL
    ──────────────────────────────────────────────────────────── */
 const VolumeCell = ({ strength }: { strength: string }) => {
   const map: Record<string, { style: React.CSSProperties; dotColor: string; textClass: string; label: string }> = {
@@ -260,7 +265,6 @@ const VolumeCell = ({ strength }: { strength: string }) => {
       style: { background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.28)' },
       dotColor: '#4ade80', textClass: 'text-green-400', label: 'HIGH',
     },
-    // ── changed from grey → sky-blue ──
     NORMAL: {
       style: { background: 'rgba(56,189,248,0.10)', border: '1px solid rgba(56,189,248,0.28)' },
       dotColor: '#38bdf8', textClass: 'text-sky-400', label: 'NORMAL',
@@ -275,6 +279,25 @@ const VolumeCell = ({ strength }: { strength: string }) => {
     <div style={s.style} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md">
       <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: s.dotColor, flexShrink: 0 }} />
       <span className={`font-mono font-semibold text-[10.5px] uppercase tracking-wide ${s.textClass}`}>{s.label}</span>
+    </div>
+  );
+};
+
+/* ────────────────────────────────────────────────────────────
+   TAGS CELL — renders each tag as a colored pill
+   ──────────────────────────────────────────────────────────── */
+const TagsCell = ({ tagsStr }: { tagsStr: string }) => {
+  const tagList = (tagsStr || "").split(",").map(t => t.trim()).filter(Boolean);
+  const visible = tagList.slice(0, 4);
+  const more = tagList.length - 4;
+  return (
+    <div className="flex gap-1 flex-wrap items-center">
+      {visible.map((tag) => <TagPill key={tag} label={tag} />)}
+      {more > 0 && (
+        <span className="text-[9.5px] text-slate-500 font-mono bg-slate-800/60 border border-slate-700/40 px-1.5 py-0.5 rounded-md">
+          +{more}
+        </span>
+      )}
     </div>
   );
 };
@@ -315,7 +338,7 @@ const FilterSelect = ({ label, value, onChange, options }: {
 );
 
 /* ────────────────────────────────────────────────────────────
-   STAT CHIP — header summary chips
+   STAT CHIP
    ──────────────────────────────────────────────────────────── */
 const StatChip = ({ label, value, accent }: { label: string; value: string | number; accent?: string }) => (
   <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/[0.03] border border-white/[0.06]">
@@ -378,7 +401,6 @@ export default function SwingTerminalDark() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  // Close calendar on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (calRef.current && !calRef.current.contains(e.target as Node)) setIsCalOpen(false);
@@ -429,15 +451,15 @@ export default function SwingTerminalDark() {
     return Array.from(tags);
   }, [filteredData]);
 
-  // Stats
   const bullishCount = useMemo(() =>
     filteredData.filter(r => (r.trend_status || '').toLowerCase().includes('bullish')).length,
   [filteredData]);
+
   const highConvCount = useMemo(() =>
     filteredData.filter(r => r.setup_type === 'HIGH_CONVICTION').length,
   [filteredData]);
 
-  // ── TABLE COLUMNS ──
+  /* ── TABLE COLUMNS ── */
   const columns = useMemo(() => [
     columnHelper.display({
       id: "sno",
@@ -448,7 +470,7 @@ export default function SwingTerminalDark() {
       ),
     }),
     columnHelper.accessor("ticker", {
-      header: "Ticker",
+      header: "Asset",
       size: 180,
       cell: info => {
         const ticker = info.getValue();
@@ -465,7 +487,7 @@ export default function SwingTerminalDark() {
     }),
     columnHelper.accessor("ltp", {
       header: "LTP",
-      size: 100,
+      size: 110,
       cell: info => (
         <span className="font-mono font-semibold text-[13px] text-slate-200">
           ₹{(info.getValue() || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -473,13 +495,13 @@ export default function SwingTerminalDark() {
       ),
     }),
     columnHelper.accessor("health_score", {
-      header: "Health",
-      size: 80,
+      header: "Health Score",
+      size: 100,
       cell: info => <HealthBadge score={info.getValue()} />,
     }),
     columnHelper.accessor("trend_status", {
       header: "Trend",
-      size: 130,
+      size: 140,
       cell: info => <TrendCell value={info.getValue() || 'Neutral'} />,
     }),
     columnHelper.accessor("momentum_status", {
@@ -510,7 +532,7 @@ export default function SwingTerminalDark() {
     }),
     columnHelper.accessor("weighted_avg", {
       header: "W.Avg",
-      size: 110,
+      size: 120,
       cell: info => (
         <span className="font-mono text-[12px] text-slate-400">
           ₹{(info.getValue() || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -519,7 +541,7 @@ export default function SwingTerminalDark() {
     }),
     columnHelper.accessor("distance_pct", {
       header: "Dist %",
-      size: 130,
+      size: 140,
       cell: info => {
         const row = info.row.original;
         return <DistCell pct={info.getValue() || 0} status={row.distance_status || ''} />;
@@ -527,7 +549,7 @@ export default function SwingTerminalDark() {
     }),
     columnHelper.accessor("volume_strength", {
       header: "Volume",
-      size: 100,
+      size: 110,
       cell: info => <VolumeCell strength={info.getValue() || 'NORMAL'} />,
     }),
     columnHelper.accessor("swing_score", {
@@ -537,29 +559,20 @@ export default function SwingTerminalDark() {
     }),
     columnHelper.accessor("setup_type", {
       header: "Setup",
-      size: 150,
+      size: 160,
       cell: info => <SetupBadge value={info.getValue() || 'NEUTRAL'} />,
     }),
+    // ── TAGS COLUMN — colored pills, NOT plain text ──
     columnHelper.accessor("tags", {
       header: "Tags",
-      size: 200,
-      cell: info => {
-        const tagsStr = info.getValue() || "";
-        const tagList = tagsStr.split(",").filter(Boolean).map(t => t.trim());
-        const visible = tagList.slice(0, 3);
-        const more = tagList.length - 3;
-        return (
-          <div className="flex gap-1 flex-wrap items-center">
-            {visible.map((tag: string) => <TagPill key={tag} label={tag} />)}
-            {more > 0 && <span className="text-[9.5px] text-slate-600 font-mono">+{more}</span>}
-          </div>
-        );
-      },
+      size: 260,
+      cell: info => <TagsCell tagsStr={info.getValue() || ""} />,
     }),
+    // ── LINK COLUMN — Google Finance redirect ──
     columnHelper.display({
       id: "link",
       header: "Link",
-      size: 44,
+      size: 56,
       cell: (info) => {
         const ticker = info.row.original.ticker;
         return (
@@ -567,10 +580,10 @@ export default function SwingTerminalDark() {
             href={`https://www.google.com/finance/quote/${ticker}:NSE`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center w-7 h-7 rounded-md bg-slate-800/60 border border-slate-700/40 hover:border-blue-500/50 hover:bg-blue-500/10 text-slate-600 hover:text-blue-400 transition-all group"
+            className="flex items-center justify-center w-8 h-8 rounded-md bg-slate-800/60 border border-slate-700/40 hover:border-blue-500/50 hover:bg-blue-500/10 text-slate-500 hover:text-blue-400 transition-all group"
             title={`Open ${ticker} on Google Finance`}
           >
-            <ExternalLink size={12} className="group-hover:scale-110 transition-transform" />
+            <ExternalLink size={13} className="group-hover:scale-110 transition-transform" />
           </a>
         );
       },
@@ -634,7 +647,6 @@ export default function SwingTerminalDark() {
 
         {/* Right controls */}
         <div className="flex items-center gap-2">
-          {/* Stats */}
           <div className="hidden lg:flex items-center gap-2 mr-2">
             <StatChip label="Signals"    value={filteredData.length} />
             <StatChip label="Bullish"    value={bullishCount}  accent="bg-emerald-400" />
@@ -781,7 +793,7 @@ export default function SwingTerminalDark() {
 
       {/* ─── TABLE ─── */}
       <div className="flex-1 overflow-auto relative" style={{ background: 'linear-gradient(180deg, #0a0f18 0%, #080c12 100%)' }}>
-        <table className="w-full text-left border-collapse min-w-[1600px]">
+        <table className="w-full text-left border-collapse min-w-[1700px]">
           <thead className="sticky top-0 z-20" style={{ background: '#0b1018' }}>
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id} className="border-b border-white/[0.05]">
