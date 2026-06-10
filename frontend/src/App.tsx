@@ -487,7 +487,7 @@ export default function SwingTerminalDark() {
         const ticker = info.row.original.ticker;
         return (
           <a
-            href={`https://www.tradingview.com/chart/?symbol=NSE:${ticker}`}
+            href={`https://www.google.com/finance/quote/${ticker}:NSE`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center w-7 h-7 rounded-md bg-slate-800/60 border border-slate-700/40 hover:border-blue-500/50 hover:bg-blue-500/10 text-slate-600 hover:text-blue-400 transition-all group"
