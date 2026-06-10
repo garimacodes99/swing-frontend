@@ -183,18 +183,30 @@ const RsiCell = ({ rsi }: { rsi: number }) => {
    TREND / MOMENTUM CELL
    ──────────────────────────────────────────────────────────── */
 const TrendCell = ({ value }: { value: string }) => {
-  const normalized = (value || '').toLowerCase();
-  const isBull = normalized === 'bullish';
-  const isBear = normalized === 'bearish';
+  const normalized = (value || '').toLowerCase().replace(/[\s-]/g, '_');
 
-  if (isBull) return (
+  if (normalized === 'strong_bullish') return (
+    <div style={{ background: 'rgba(16,185,129,0.22)', border: '1px solid rgba(16,185,129,0.50)' }}
+      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md">
+      <TrendingUp size={11} className="text-emerald-300 shrink-0" />
+      <span className="font-black text-[10.5px] uppercase tracking-wider text-emerald-200">STR BULLISH</span>
+    </div>
+  );
+  if (normalized === 'bullish') return (
     <div style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.30)' }}
       className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md">
       <TrendingUp size={11} className="text-emerald-400 shrink-0" />
       <span className="font-bold text-[10.5px] uppercase tracking-wider text-emerald-300">Bullish</span>
     </div>
   );
-  if (isBear) return (
+  if (normalized === 'strong_bearish') return (
+    <div style={{ background: 'rgba(239,68,68,0.22)', border: '1px solid rgba(239,68,68,0.50)' }}
+      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md">
+      <TrendingDown size={11} className="text-red-300 shrink-0" />
+      <span className="font-black text-[10.5px] uppercase tracking-wider text-red-200">STR BEARISH</span>
+    </div>
+  );
+  if (normalized === 'bearish') return (
     <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.30)' }}
       className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md">
       <TrendingDown size={11} className="text-red-400 shrink-0" />
@@ -391,7 +403,7 @@ export default function SwingTerminalDark() {
   }, [filteredData]);
 
   // Stats
-  const bullishCount = useMemo(() => filteredData.filter(r => (r.trend_status || '').toLowerCase() === 'bullish').length, [filteredData]);
+  const bullishCount = useMemo(() => filteredData.filter(r => ['bullish','strong_bullish'].includes((r.trend_status || '').toLowerCase())).length, [filteredData]);
   const highConvCount = useMemo(() => filteredData.filter(r => r.setup_type === 'HIGH_CONVICTION').length, [filteredData]);
 
   // ── TABLE COLUMNS ──
@@ -445,11 +457,24 @@ export default function SwingTerminalDark() {
       cell: info => {
         const val = info.getValue() || 'Neutral';
         const norm = val.toLowerCase();
-        const map: Record<string, string> = {
-          bullish: 'text-emerald-400', hot: 'text-amber-400', recovery: 'text-blue-400',
-          bearish: 'text-red-400', neutral: 'text-slate-500', healthy: 'text-cyan-400'
+
+        const styleMap: Record<string, { bg: string; border: string; textClass: string; label: string }> = {
+          hot:      { bg: 'rgba(16,185,129,0.18)',  border: 'rgba(16,185,129,0.45)',  textClass: 'text-emerald-300 font-black', label: '🔥 HOT' },
+          bullish:  { bg: 'rgba(16,185,129,0.10)',  border: 'rgba(16,185,129,0.28)',  textClass: 'text-emerald-400 font-bold',  label: 'BULLISH' },
+          recovery: { bg: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.30)',  textClass: 'text-blue-300 font-bold',     label: 'RECOVERY' },
+          healthy:  { bg: 'rgba(6,182,212,0.10)',   border: 'rgba(6,182,212,0.25)',   textClass: 'text-cyan-400 font-semibold', label: 'HEALTHY' },
+          neutral:  { bg: 'rgba(100,116,139,0.10)', border: 'rgba(100,116,139,0.20)', textClass: 'text-slate-500 font-semibold',label: 'NEUTRAL' },
+          bearish:  { bg: 'rgba(239,68,68,0.10)',   border: 'rgba(239,68,68,0.28)',   textClass: 'text-red-400 font-bold',      label: 'BEARISH' },
+          weak:     { bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.20)',   textClass: 'text-red-500 font-semibold',  label: 'WEAK' },
         };
-        return <span className={`font-semibold text-[11px] uppercase tracking-wide ${map[norm] || 'text-slate-400'}`}>{val}</span>;
+
+        const s = styleMap[norm] || { bg: 'rgba(100,116,139,0.10)', border: 'rgba(100,116,139,0.20)', textClass: 'text-slate-400 font-semibold', label: val };
+        return (
+          <div style={{ background: s.bg, border: `1px solid ${s.border}` }}
+            className="inline-flex items-center px-2 py-1 rounded-md">
+            <span className={`text-[10.5px] uppercase tracking-wider ${s.textClass}`}>{s.label}</span>
+          </div>
+        );
       },
     }),
     columnHelper.accessor("rsi_14", {
