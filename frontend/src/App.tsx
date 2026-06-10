@@ -183,8 +183,9 @@ const RsiCell = ({ rsi }: { rsi: number }) => {
    TREND / MOMENTUM CELL
    ──────────────────────────────────────────────────────────── */
 const TrendCell = ({ value }: { value: string }) => {
-  const isBull = value === 'Bullish';
-  const isBear = value === 'Bearish';
+  const normalized = (value || '').toLowerCase();
+  const isBull = normalized === 'bullish';
+  const isBear = normalized === 'bearish';
 
   if (isBull) return (
     <div style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.30)' }}
@@ -367,10 +368,10 @@ export default function SwingTerminalDark() {
         if (rsiZone === "Oversold" && rsi >= 40) return false;
         if (rsiZone === "Overbought" && rsi <= 60) return false;
       }
-      if (trend !== "All" && row.trend_status !== trend) return false;
+      if (trend !== "All" && (row.trend_status || '').toLowerCase() !== trend.toLowerCase()) return false;
       if (setupFilter !== "All" && row.setup_type !== setupFilter) return false;
       if (volumeStrength !== "All" && row.volume_strength !== volumeStrength) return false;
-      if (momentumStatus !== "All" && row.momentum_status !== momentumStatus) return false;
+      if (momentumStatus !== "All" && (row.momentum_status || '').toLowerCase() !== momentumStatus.toLowerCase()) return false;
       if (distanceStatus !== "All" && row.distance_status !== distanceStatus) return false;
       if (tagsInput) {
         const filterTags = tagsInput.split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
@@ -390,7 +391,7 @@ export default function SwingTerminalDark() {
   }, [filteredData]);
 
   // Stats
-  const bullishCount = useMemo(() => filteredData.filter(r => r.trend_status === 'Bullish').length, [filteredData]);
+  const bullishCount = useMemo(() => filteredData.filter(r => (r.trend_status || '').toLowerCase() === 'bullish').length, [filteredData]);
   const highConvCount = useMemo(() => filteredData.filter(r => r.setup_type === 'HIGH_CONVICTION').length, [filteredData]);
 
   // ── TABLE COLUMNS ──
@@ -443,11 +444,12 @@ export default function SwingTerminalDark() {
       size: 120,
       cell: info => {
         const val = info.getValue() || 'Neutral';
+        const norm = val.toLowerCase();
         const map: Record<string, string> = {
-          Bullish: 'text-emerald-400', Hot: 'text-amber-400', Recovery: 'text-blue-400',
-          Bearish: 'text-red-400', Neutral: 'text-slate-500'
+          bullish: 'text-emerald-400', hot: 'text-amber-400', recovery: 'text-blue-400',
+          bearish: 'text-red-400', neutral: 'text-slate-500', healthy: 'text-cyan-400'
         };
-        return <span className={`font-semibold text-[11px] uppercase tracking-wide ${map[val] || 'text-slate-500'}`}>{val}</span>;
+        return <span className={`font-semibold text-[11px] uppercase tracking-wide ${map[norm] || 'text-slate-400'}`}>{val}</span>;
       },
     }),
     columnHelper.accessor("rsi_14", {
