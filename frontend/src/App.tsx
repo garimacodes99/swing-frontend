@@ -13,6 +13,9 @@ import {
 } from "@tanstack/react-table";
 import type { SortingState } from "@tanstack/react-table";
 
+// ── Import Supabase services ──
+import { fetchFinalSnapshot, type StockMetric } from "./services/dataService";
+
 /* ────────────────────────────────────────────────────────────
    TAG BADGE — compact pill with color coding
    ──────────────────────────────────────────────────────────── */
@@ -81,435 +84,226 @@ const FilterSelect = ({ label, value, onChange, options }: {
    MAIN TERMINAL COMPONENT
    ──────────────────────────────────────────────────────────── */
 
-// ── Market cap classification by tags ──
-const getMarketCapFromTags = (tagList: string[]): string => {
-  if (tagList.includes('LCAP')) return 'Large';
-  if (tagList.includes('MCAP')) return 'Mid';
-  if (tagList.includes('SCAP')) return 'Small';
-  if (tagList.includes('MICAP')) return 'Micro';
-  return 'Unknown';
-};
-
-const columnHelper = createColumnHelper<any>();
+const columnHelper = createColumnHelper<StockMetric>();
 
 export default function SwingTerminalDark() {
-  const { rows, load } = useSnapshotStore();
-
+  // ── State for Supabase data ──
+  const [allData, setAllData] = useState<StockMetric[]>([]);
   const [dates, setDates] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>("");
-  const [scores, setScores] = useState<{ ticker?: string; Tickers?: string; Score?: number; score?: number; tags?: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Filter State
   const [searchTerm, setSearchTerm] = useState("");
   const [minScore, setMinScore] = useState("");
+  const [minHealth, setMinHealth] = useState("");
+  const [minRsi, setMinRsi] = useState("");
+  const [maxRsi, setMaxRsi] = useState("");
   const [minDist, setMinDist] = useState("");
   const [maxDist, setMaxDist] = useState("");
   const [rsiZone, setRsiZone] = useState("All");
   const [marketCap, setMarketCap] = useState("All");
   const [trend, setTrend] = useState("All");
   const [setupFilter, setSetupFilter] = useState("All");
+  const [volumeStrength, setVolumeStrength] = useState("All");
+  const [momentumStatus, setMomentumStatus] = useState("All");
+  const [distanceStatus, setDistanceStatus] = useState("All");
   const [tagsInput, setTagsInput] = useState("");
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'Swing Score', desc: true }]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'swing_score', desc: true }]);
 
   const [isCalOpen, setIsCalOpen] = useState(false);
   const calRef = useRef<HTMLDivElement>(null);
 
-  const hasActiveFilters = searchTerm || minScore || minDist || maxDist || rsiZone !== "All" || marketCap !== "All" || trend !== "All" || setupFilter !== "All" || tagsInput;
+  const hasActiveFilters = searchTerm || minScore || minHealth || minRsi || maxRsi || minDist || maxDist || rsiZone !== "All" || marketCap !== "All" || trend !== "All" || setupFilter !== "All" || volumeStrength !== "All" || momentumStatus !== "All" || distanceStatus !== "All" || tagsInput;
 
   const resetFilters = useCallback(() => {
-    setSearchTerm(""); setMinScore(""); setMinDist(""); setMaxDist("");
-    setRsiZone("All"); setMarketCap("All"); setTrend("All"); setSetupFilter("All"); setTagsInput("");
+    setSearchTerm(""); setMinScore(""); setMinHealth(""); setMinRsi(""); setMaxRsi(""); setMinDist(""); setMaxDist("");
+    setRsiZone("All"); setMarketCap("All"); setTrend("All"); setSetupFilter("All"); setVolumeStrength("All"); setMomentumStatus("All"); setDistanceStatus("All"); setTagsInput("");
   }, []);
 
-  // ── Data Loading ──
+  // ── Load data from Supabase ──
   useEffect(() => {
-    // Primary index for trading snapshots
-    fetch("/close/index.json")
-      .then(r => r.json())
+    setIsLoading(true);
+    fetchFinalSnapshot()
       .then(data => {
-        const dList = data.dates.map((d: { date: string }) => d.date);
-        setDates(dList);
-        if (data.latest && !selectedDate) {
-          console.log("Setting initial date from index:", data.latest);
-          setSelectedDate(data.latest);
+        setAllData(data);
+        const uniqueDates = [...new Set(data.map(d => d.run_date))].sort().reverse();
+        setDates(uniqueDates);
+        if (uniqueDates.length > 0 && !selectedDate) {
+          setSelectedDate(uniqueDates[0]);
+          console.log("Loaded data. Latest date:", uniqueDates[0]);
         }
       })
-      .catch(err => console.error("Error loading index from /close/index.json:", err));
-
-    fetch("/data/scores.json")
-      .then(r => r.json())
-      .then((data: { ticker?: string; Tickers?: string; Score?: number; score?: number; tags?: string }[]) => setScores(data))
-      .catch(err => console.error("Error loading scores:", err));
+      .catch(err => console.error("Error loading data:", err))
+      .finally(() => setIsLoading(false));
   }, []);
 
-  useEffect(() => {
-    if (selectedDate) load(selectedDate);
-  }, [selectedDate, load]);
+  // ── Filter data by selected date ──
+  const filteredByDate = useMemo(() => {
+    if (!selectedDate) return allData;
+    return allData.filter(row => row.run_date === selectedDate);
+  }, [allData, selectedDate]);
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (calRef.current && !calRef.current.contains(e.target as Node)) setIsCalOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [setIsCalOpen]);
-
-  // ── Calendar ──
-  const calendarData = useMemo(() => {
-    if (!selectedDate) return { month: '', year: 0, daysInMonth: 0, firstDayOfMonth: 0 };
-    const d = new Date(selectedDate);
-    return {
-      month: d.toLocaleString('default', { month: 'long' }),
-      year: d.getFullYear(),
-      firstDayOfMonth: new Date(d.getFullYear(), d.getMonth(), 1).getDay(),
-      daysInMonth: new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(),
-    };
-  }, [selectedDate]);
-
-  // ── Score Map ──
-  const scoreMap = useMemo(() => {
-    const map: Record<string, { score?: number | null; tags: string; tagList: string[] }> = {};
-    scores.forEach(s => {
-      const ticker = (s.ticker || s.Tickers || "").toUpperCase();
-      if (!ticker) return;
-      const rawTags = (s.tags || "").toUpperCase();
-      const tagList = rawTags.split('|').map(t => t.trim()).filter(Boolean);
-      map[ticker] = { score: s.score ?? s.Score, tags: rawTags, tagList };
-    });
-    return map;
-  }, [scores]);
-
-  // ── All unique tags for reference ──
-  const allUniqueTags = useMemo(() => {
-    const set = new Set<string>();
-    Object.values(scoreMap).forEach(v => v.tagList.forEach(t => set.add(t)));
-    return Array.from(set).sort();
-  }, [scoreMap]);
-
-  // ── Filtered Data & Score Counts ──
-  const { filteredData, scoreCounts } = useMemo(() => {
-    let baseData = [...rows].filter(r => r.date === selectedDate);
-
-    // Inner join with final_score list items (scoreMap) and exclude invalid/blank/null scores
-    const mergedData: typeof baseData = [];
-    baseData.forEach(r => {
-      const ticker = (r.Ticker || '').toUpperCase();
-      const meta = scoreMap[ticker];
-
-      // Stock MUST exist in score map and MUST have a valid Health Score
-      if (meta && meta.score !== undefined && meta.score !== null && String(meta.score).trim() !== "") {
-        mergedData.push({ ...r, Score: meta.score, Tags: meta.tags || '', TagList: meta.tagList || [] });
+  // ── Apply all filters ──
+  const filteredData = useMemo(() => {
+    return filteredByDate.filter(row => {
+      if (searchTerm && !row.ticker.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      if (minScore && (row.swing_score || 0) < Number(minScore)) return false;
+      if (minHealth && (row.health_score || 0) < Number(minHealth)) return false;
+      if (minRsi && (row.rsi_14 || 0) < Number(minRsi)) return false;
+      if (maxRsi && (row.rsi_14 || 0) > Number(maxRsi)) return false;
+      if (minDist && (row.distance_pct || 0) < Number(minDist)) return false;
+      if (maxDist && (row.distance_pct || 0) > Number(maxDist)) return false;
+      if (rsiZone !== "All") {
+        const rsi = row.rsi_14 || 0;
+        if (rsiZone === "Healthy" && (rsi < 40 || rsi > 60)) return false;
+        if (rsiZone === "Oversold" && rsi >= 40) return false;
+        if (rsiZone === "Overbought" && rsi <= 60) return false;
       }
+      if (trend !== "All" && row.trend_status !== trend) return false;
+      if (setupFilter !== "All" && row.setup_type !== setupFilter) return false;
+      if (volumeStrength !== "All" && row.volume_strength !== volumeStrength) return false;
+      if (momentumStatus !== "All" && row.momentum_status !== momentumStatus) return false;
+      if (distanceStatus !== "All" && row.distance_status !== distanceStatus) return false;
+      return true;
     });
-    baseData = mergedData;
+  }, [filteredByDate, searchTerm, minScore, minHealth, minRsi, maxRsi, minDist, maxDist, rsiZone, trend, setupFilter, volumeStrength, momentumStatus, distanceStatus]);
 
-    // Calculate score counts for all available data on this date
+  // ── Score distribution ──
+  const scoreCounts = useMemo(() => {
     const counts: Record<number, number> = {};
-    baseData.forEach(r => {
-      if (r.Score !== undefined) {
-        counts[r.Score] = (counts[r.Score] || 0) + 1;
+    filteredByDate.forEach(row => {
+      const score = row.swing_score || 0;
+      counts[score] = (counts[score] || 0) + 1;
+    });
+    return counts;
+  }, [filteredByDate]);
+
+  // ── Get unique tags ──
+  const allUniqueTags = useMemo(() => {
+    const tags = new Set<string>();
+    filteredData.forEach(row => {
+      if (row.tags) {
+        const tagList = row.tags.split(",").map(t => t.trim()).filter(Boolean);
+        tagList.forEach(tag => tags.add(tag));
       }
     });
+    return Array.from(tags);
+  }, [filteredData]);
 
-    let data = [...baseData];
-
-    // Search
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase();
-      data = data.filter(r => r.Ticker?.toLowerCase().includes(q));
-    }
-
-    // Minimum Score
-    if (minScore !== "") {
-      const n = Number(minScore);
-      if (!isNaN(n)) data = data.filter(r => r.Score >= n);
-    }
-
-    // Distance % range
-    if (minDist !== "") {
-      const n = Number(minDist);
-      if (!isNaN(n)) data = data.filter(r => (r.Dist_Weighted_Avg_PCT ?? -Infinity) >= n);
-    }
-    if (maxDist !== "") {
-      const n = Number(maxDist);
-      if (!isNaN(n)) data = data.filter(r => (r.Dist_Weighted_Avg_PCT ?? Infinity) <= n);
-    }
-
-    // RSI Zone
-    if (rsiZone !== "All") {
-      data = data.filter(r => {
-        const rsi = r.RSI_14 ?? 50;
-        if (rsiZone === "Healthy") return rsi >= 40 && rsi <= 60;
-        if (rsiZone === "Oversold") return rsi < 40;
-        if (rsiZone === "Overbought") return rsi > 60;
-        return true;
-      });
-    }
-
-    // Market Cap (based on tags LCAP/MCAP/SCAP/MICAP)
-    if (marketCap !== "All") {
-      data = data.filter(r => getMarketCapFromTags(r.TagList || []) === marketCap);
-    }
-
-    // Trend (Bullish/Bearish)
-    if (trend !== "All") {
-      data = data.filter(r => {
-        const d = r.Dist_Weighted_Avg_PCT ?? 0;
-        return trend === "Bullish" ? d > 0 : d <= 0;
-      });
-    }
-
-    // Setup Type
-    if (setupFilter !== "All") {
-      data = data.filter(r => (r['Setup Type'] || '') === setupFilter);
-    }
-
-    // Tags filter (pipe-separated input)
-    if (tagsInput.trim()) {
-      const filterTags = tagsInput.toUpperCase().split(',').map(s => s.trim()).filter(Boolean);
-      data = data.filter(r => {
-        const rowTags = r.TagList || [];
-        return filterTags.some(ft => rowTags.some((rt: string) => rt.includes(ft)));
-      });
-    }
-
-    return { filteredData: data, scoreCounts: counts };
-  }, [rows, selectedDate, searchTerm, minScore, minDist, maxDist, rsiZone, marketCap, trend, setupFilter, tagsInput, scoreMap]);
-
-  // ── TanStack Table ──
-
-  const columns = useMemo(() => [
-    columnHelper.display({
-      id: 'sno',
-      header: 'S.No',
-      cell: info => <span className="text-slate-600 font-mono text-[11px]">{info.table.getSortedRowModel().flatRows.findIndex(r => r.id === info.row.id) + 1}</span>,
-      size: 44,
-    }),
-
-    columnHelper.accessor('Ticker', {
-      header: 'ASSET',
-      cell: info => {
-        const ticker = info.getValue() || '';
-        return (
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600/40 flex items-center justify-center text-[10px] font-bold text-slate-300 tracking-tight shrink-0">
-              {ticker.slice(0, 2)}
+  // ── TABLE COLUMNS - CORRECT ORDER ──
+  const columns = useMemo(
+    () => [
+      columnHelper.display({
+        id: "sno",
+        header: "S.No",
+        size: 60,
+        cell: (info) => <span className="font-mono text-slate-400">{info.row.index + 1}</span>,
+      }),
+      columnHelper.accessor("ticker", {
+        header: "Symbol",
+        size: 100,
+        cell: info => <span className="font-mono font-bold text-blue-300">{info.getValue()}</span>,
+      }),
+      columnHelper.accessor("ltp", {
+        header: "LTP",
+        size: 90,
+        cell: info => <span className="font-mono">{(info.getValue() || 0).toFixed(2)}</span>,
+      }),
+      columnHelper.accessor("health_score", {
+        header: "Health",
+        size: 80,
+        cell: info => <span className="font-mono text-blue-300">{info.getValue() || "N/A"}</span>,
+      }),
+      columnHelper.accessor("distance_pct", {
+        header: "Dist %",
+        size: 90,
+        cell: info => <span className="font-mono text-slate-300">{(info.getValue() || 0).toFixed(2)}</span>,
+      }),
+      columnHelper.accessor("swing_score", {
+        header: "Swing Score",
+        size: 120,
+        cell: info => {
+          const score = info.getValue() || 0;
+          const color = score >= 8 ? "text-green-400" : score >= 5 ? "text-yellow-400" : "text-red-400";
+          return <span className={`font-mono font-bold ${color}`}>{score}</span>;
+        },
+      }),
+      columnHelper.accessor("rsi_14", {
+        header: "RSI_14",
+        size: 90,
+        cell: info => {
+          const rsi = info.getValue() || 0;
+          let color = "text-slate-400";
+          if (rsi > 70) color = "text-red-400";
+          else if (rsi > 60) color = "text-orange-400";
+          else if (rsi < 30) color = "text-green-400";
+          else if (rsi < 40) color = "text-lime-400";
+          return <span className={`font-mono ${color}`}>{rsi.toFixed(1)}</span>;
+        },
+      }),
+      columnHelper.accessor("momentum_status", {
+        header: "Momentum",
+        size: 110,
+        cell: info => {
+          const status = info.getValue() || "NEUTRAL";
+          const color = status === "Bullish" ? "text-green-400" : status === "Bearish" ? "text-red-400" : "text-slate-400";
+          return <span className={`font-mono font-semibold ${color}`}>{status}</span>;
+        },
+      }),
+      columnHelper.accessor("trend_status", {
+        header: "Trend",
+        size: 100,
+        cell: info => {
+          const trend = info.getValue() || "NEUTRAL";
+          const color = trend === "Bullish" ? "text-green-400" : trend === "Bearish" ? "text-red-400" : "text-slate-400";
+          return <span className={`font-mono font-semibold ${color}`}>{trend}</span>;
+        },
+      }),
+      columnHelper.accessor("weighted_avg", {
+        header: "W.Avg",
+        size: 100,
+        cell: info => <span className="font-mono text-slate-400">{(info.getValue() || 0).toFixed(2)}</span>,
+      }),
+      columnHelper.accessor("distance_status", {
+        header: "Dist Status",
+        size: 110,
+        cell: info => {
+          const status = info.getValue() || "NEUTRAL";
+          const color = status && status.includes("Favorable") ? "text-green-400" : status && status.includes("Unfavorable") ? "text-red-400" : "text-slate-400";
+          return <span className={`font-mono text-xs ${color}`}>{status}</span>;
+        },
+      }),
+      columnHelper.accessor("volume_strength", {
+        header: "Vol Strength",
+        size: 110,
+        cell: info => {
+          const strength = info.getValue() || "NORMAL";
+          const color = strength === "HIGH" ? "text-green-400" : strength === "VERY_HIGH" ? "text-green-500" : "text-slate-400";
+          return <span className={`font-mono text-xs font-semibold ${color}`}>{strength}</span>;
+        },
+      }),
+      columnHelper.accessor("setup_type", {
+        header: "Setup",
+        size: 140,
+        cell: info => <TagPill label={info.getValue() || "NEUTRAL"} />,
+      }),
+      columnHelper.accessor("tags", {
+        header: "Tags",
+        size: 150,
+        cell: info => {
+          const tagsStr = info.getValue() || "";
+          const tagList = tagsStr.split(",").filter(Boolean).map(t => t.trim());
+          return (
+            <div className="flex gap-1 flex-wrap">
+              {tagList.map((tag: string) => <TagPill key={tag} label={tag} />)}
             </div>
-            <div className="flex flex-col min-w-0">
-              <span className="font-bold text-[14px] text-slate-100 tracking-wide truncate">{ticker}</span>
-              <span className="text-[10px] text-slate-500 font-medium tracking-wider truncate">NSE • EQUITY</span>
-            </div>
-          </div>
-        );
-      },
-      size: 220,
-    }),
-
-    columnHelper.accessor('LTP', {
-      header: () => <div className="text-right w-full">LTP</div>,
-      cell: info => (
-        <div className="text-right font-mono text-[14px] text-slate-200 font-medium tabular-nums">
-          ₹{(info.getValue() || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-        </div>
-      ),
-      size: 120,
-    }),
-
-    columnHelper.accessor('Score', {
-      header: () => <div className="text-right w-full">HEALTH SCORE</div>,
-      cell: info => {
-        const val = info.getValue();
-        if (val === undefined || val === null) return <div className="text-right font-mono text-[14px] text-slate-600">—</div>;
-        let bg = 'bg-slate-700/30 text-slate-300';
-        if (val >= 8) bg = 'bg-emerald-500/15 text-emerald-400 font-bold';
-        else if (val >= 6) bg = 'bg-blue-500/10 text-blue-300';
-        else if (val <= 4) bg = 'bg-red-500/12 text-red-400';
-        return (
-          <div className="flex justify-end">
-            <span className={`inline-flex items-center justify-center w-8 h-6 rounded ${bg} font-mono text-[14px] tabular-nums`}>
-              {val}
-            </span>
-          </div>
-        );
-      },
-      sortingFn: "basic",
-      size: 110,
-    }),
-
-    columnHelper.accessor('Trend Status', {
-      header: 'TREND',
-      cell: info => {
-        const val = info.getValue() || '';
-        let color = 'text-slate-500';
-        if (val === 'STRONG_BULLISH') color = 'text-emerald-400';
-        else if (val === 'BULLISH') color = 'text-green-400';
-        else if (val === 'NEUTRAL') color = 'text-slate-400';
-        else if (val === 'BEARISH') color = 'text-red-400';
-        return <span className={`font-mono text-[12px] font-semibold tracking-wide ${color}`}>{val.replace('_', ' ')}</span>;
-      },
-      size: 130,
-    }),
-
-    columnHelper.accessor('Momentum Status', {
-      header: 'MOMENTUM',
-      cell: info => {
-        const val = info.getValue() || '';
-        let color = 'text-slate-500';
-        if (val === 'IMPROVING') color = 'text-emerald-400';
-        else if (val === 'WEAKENING') color = 'text-red-400';
-        else if (val === 'OVERBOUGHT') color = 'text-orange-400';
-        else if (val === 'OVERSOLD') color = 'text-purple-400';
-        return <span className={`font-mono text-[12px] font-semibold tracking-wide ${color}`}>{val}</span>;
-      },
-      size: 120,
-    }),
-
-    columnHelper.accessor('RSI_14', {
-      header: () => <div className="text-right w-full">RSI</div>,
-      cell: info => {
-        const val = info.getValue() || 0;
-        let color = 'text-slate-400';
-        if (val < 40) color = 'text-terminal-red';
-        else if (val > 60) color = 'text-terminal-green';
-        return <div className={`text-right font-mono text-[14px] tabular-nums ${color}`}>{val.toFixed(1)}</div>;
-      },
-      size: 80,
-    }),
-
-    columnHelper.accessor('Weighted_Avg', {
-      header: () => <div className="text-right w-full">W.AVG</div>,
-      cell: info => (
-        <div className="text-right font-mono text-[14px] text-slate-500 tabular-nums">
-          ₹{(info.getValue() || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 })}
-        </div>
-      ),
-      size: 110,
-    }),
-
-    columnHelper.accessor('Dist_Weighted_Avg_PCT', {
-      header: () => <div className="text-right w-full">DIST %</div>,
-      cell: info => {
-        const val = info.getValue() || 0;
-        const status = info.row.original['Distance Status'] || '';
-
-        let statusColor = 'text-slate-500';
-        if (status === 'IDEAL_ENTRY') statusColor = 'text-[#00ff88] font-bold';
-        else if (status === 'RECOVERY_ZONE') statusColor = 'text-cyan-400';
-        else if (status === 'EXTENDED') statusColor = 'text-lime-300';
-        else if (status === 'OVEREXTENDED') statusColor = 'text-amber-500/80';
-        else if (status === 'WEAK') statusColor = 'text-red-400/80';
-
-        return (
-          <div className="flex flex-col items-end justify-center min-w-[70px]">
-            <div className={`font-mono text-[14px] font-semibold tabular-nums leading-tight ${val > 0 ? 'text-terminal-green' : 'text-terminal-red'}`}>
-              {val > 0 ? '+' : ''}{val.toFixed(2)}%
-            </div>
-            {status && (
-              <div className={`text-[10px] ${statusColor} uppercase tracking-wider mt-0.5 whitespace-nowrap`}>
-                {status.replace('_', ' ')}
-              </div>
-            )}
-          </div>
-        );
-      },
-      size: 110,
-    }),
-
-    columnHelper.accessor('Volume Strength', {
-      header: 'VOLUME',
-      cell: info => {
-        const val = info.getValue() || '';
-        let color = 'text-slate-500';
-        if (val === 'VERY_HIGH') color = 'text-cyan-400';
-        else if (val === 'HIGH') color = 'text-blue-400';
-        else if (val === 'NORMAL') color = 'text-slate-400';
-        else if (val === 'LOW') color = 'text-rose-400/80';
-        return <span className={`font-mono text-[12px] font-semibold tracking-wide ${color}`}>{val.replace('_', ' ')}</span>;
-      },
-      size: 110,
-    }),
-
-    columnHelper.accessor('Swing Score', {
-      header: () => <div className="text-right w-full">SWING SCORE</div>,
-      cell: info => {
-        const val = info.getValue();
-        if (val === undefined || val === null) return <div className="text-right font-mono text-[14px] text-slate-600">—</div>;
-        let bg = 'bg-slate-700/30 text-slate-300';
-        if (val >= 80) bg = 'bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.15)]';
-        else if (val >= 60) bg = 'bg-green-500/15 text-green-300 border border-green-500/20';
-        else if (val >= 40) bg = 'bg-blue-500/10 text-blue-300 border border-blue-500/10';
-        else if (val <= 20) bg = 'bg-red-500/15 text-red-400 border border-red-500/20';
-        return (
-          <div className="flex justify-end">
-            <span className={`inline-flex items-center justify-center px-2 py-0.5 min-w-[36px] h-[26px] rounded ${bg} font-mono text-[14px] tabular-nums`}>
-              {val}
-            </span>
-          </div>
-        );
-      },
-      sortingFn: "basic",
-      size: 130,
-    }),
-
-    columnHelper.accessor('Setup Type', {
-      header: 'SETUP',
-      cell: info => {
-        const val = info.getValue() || '';
-        if (!val) return <span className="text-slate-700">—</span>;
-
-        let color = 'bg-slate-700/20 text-slate-400 border-slate-600/30';
-        if (val === 'HIGH_CONVICTION') color = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25';
-        else if (val === 'MOMENTUM_SETUP') color = 'bg-blue-500/15 text-blue-300 border-blue-500/25';
-        else if (val === 'WATCHLIST') color = 'bg-amber-500/15 text-amber-300 border-amber-500/25';
-        else if (val === 'WEAK_SETUP') color = 'bg-slate-500/15 text-slate-400 border-slate-600/30';
-
-        return (
-          <span className={`inline-block px-2 py-[2.5px] rounded text-[11px] font-semibold tracking-wide border ${color} whitespace-nowrap`}>
-            {val.replace('_', ' ')}
-          </span>
-        );
-      },
-      enableSorting: false,
-      size: 150,
-    }),
-
-    columnHelper.accessor('Tags', {
-      header: 'TAGS',
-      cell: info => {
-        const tagsStr = info.getValue() || '';
-        if (!tagsStr) return <span className="text-slate-700">—</span>;
-        const tags = tagsStr.split('|').map((t: string) => t.trim()).filter(Boolean);
-        const visible = tags.slice(0, 5);
-        const extra = tags.length - 5;
-        return (
-          <div className="flex gap-1.5 flex-wrap items-center">
-            {visible.map((t: string, i: number) => <TagPill key={i} label={t} />)}
-            {extra > 0 && <span className="text-[10px] text-slate-500 font-mono">+{extra}</span>}
-          </div>
-        );
-      },
-      enableSorting: false,
-      size: 300,
-    }),
-
-    columnHelper.display({
-      id: 'link',
-      header: () => <div className="text-center w-full">LINK</div>,
-      cell: info => (
-        <div className="flex justify-center">
-          <a
-            href={`https://www.google.com/finance/quote/${info.row.original.Ticker}:NSE`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-slate-800/60 border border-slate-700/40 text-slate-500 hover:text-blue-400 hover:border-blue-500/40 hover:bg-blue-500/10 transition-all"
-          >
-            <ExternalLink size={20} />
-          </a>
-        </div>
-      ),
-      size: 70,
-    }),
-  ], []);
+          );
+        },
+      }),
+    ],
+    [],
+  );
 
   const table = useReactTable({
     data: filteredData,
@@ -520,79 +314,96 @@ export default function SwingTerminalDark() {
     getSortedRowModel: getSortedRowModel(),
   });
 
-  // ── Export CSV ──
-  const handleExport = () => {
+  const handleExport = useCallback(() => {
     const csv = [
-      ['Ticker', 'LTP', 'Health Score', 'Trend Status', 'Momentum Status', 'RSI 14', 'Weighted Avg', 'Distance %', 'Volume Strength', 'Swing Score', 'Setup Type', 'Tags'].join(','),
-      ...filteredData.map(r => [
-        r.Ticker, r.LTP, r.Score ?? '', r['Trend Status'] || '', r['Momentum Status'] || '',
-        (r.RSI_14 || 0).toFixed(1), r.Weighted_Avg, (r.Dist_Weighted_Avg_PCT || 0).toFixed(2),
-        r['Volume Strength'] || '', r['Swing Score'] ?? '', r['Setup Type'] || '', `"${r.Tags || ''}"`
-      ].join(','))
-    ].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = window.URL.createObjectURL(blob);
-    a.download = `swing-signals-${selectedDate}.csv`;
-    a.click();
-  };
+      ["S.No", "Symbol", "LTP", "Health", "Dist%", "Swing Score", "RSI14", "Momentum", "Trend", "W.Avg", "Dist Status", "Vol Strength", "Setup", "Tags"].join(","),
+      ...filteredData.map((row, idx) =>
+        [idx + 1, row.ticker, row.ltp, row.health_score, row.distance_pct, row.swing_score, row.rsi_14, row.momentum_status, row.trend_status, row.weighted_avg, row.distance_status, row.volume_strength, row.setup_type, (row.tags || "").replace(/,/g, ";")].join(",")
+      ),
+    ].join("\n");
 
-  /* ══════════════════════════════════════════════════════════
-     RENDER
-     ══════════════════════════════════════════════════════════ */
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `swing_signals_${selectedDate}.csv`);
+    link.click();
+  }, [filteredData, selectedDate]);
+
+  const calendarData = useMemo(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const prevLastDay = new Date(year, month, 0).getDate();
+    const nextDays = 7 - lastDay.getDay() - 1;
+
+    const prev = Array.from({ length: firstDay.getDay() }, (_, i) => ({
+      date: prevLastDay - firstDay.getDay() + i + 1,
+      isCurrentMonth: false,
+    }));
+
+    const current = Array.from({ length: lastDay.getDate() }, (_, i) => ({
+      date: i + 1,
+      isCurrentMonth: true,
+    }));
+
+    const next = Array.from({ length: nextDays }, (_, i) => ({
+      date: i + 1,
+      isCurrentMonth: false,
+    }));
+
+    return [...prev, ...current, ...next];
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-slate-400 font-mono">Loading data...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen h-screen bg-slate-950 text-terminal-text flex flex-col font-sans selection:bg-terminal-green/20 selection:text-terminal-green overflow-hidden">
-
+    <div className="h-screen bg-slate-950 text-slate-200 flex flex-col border border-slate-800">
       {/* ─── HEADER ─── */}
-      <header className="h-11 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-5 z-30 shrink-0">
-        <div className="flex items-center gap-5">
-          <div className="flex items-center gap-2.5">
-            <BarChart3 size={18} className="text-terminal-green" />
-            <h1 className="text-sm font-bold text-slate-100 tracking-wider">
-              SWING<span className="text-slate-500 font-mono font-normal">//LOGIC</span>
-            </h1>
-          </div>
-          <div className="h-4 w-px bg-[#1c2030]" />
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-terminal-green animate-pulse" />
-            <span className="text-[10px] font-mono text-terminal-green/80 tracking-widest uppercase">Live</span>
-          </div>
+      <header className="bg-slate-900 border-b border-slate-800 px-5 py-3.5 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          <BarChart3 size={20} className="text-blue-400" />
+          <h1 className="text-sm font-bold uppercase tracking-widest text-slate-100">Swing Terminal</h1>
+          <span className="text-xs text-slate-600 font-mono">v2.4</span>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Calendar Picker */}
-          <div className="relative" ref={calRef}>
-            <button onClick={() => setIsCalOpen(!isCalOpen)} className="flex items-center gap-2.5 px-3 py-1.5 bg-slate-800 border border-slate-700/60 hover:border-slate-500/50 rounded-md text-[12px] font-mono transition-all text-slate-300">
+          <div className="relative">
+            <button
+              onClick={() => setIsCalOpen(!isCalOpen)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 border border-slate-700/60 hover:border-slate-500/50 rounded-md text-[11px] font-mono uppercase transition-all text-slate-400 hover:text-slate-200"
+            >
               <Calendar size={13} className="text-slate-500" />
-              <span className="font-medium">{selectedDate || "Select Date"}</span>
-              <ChevronDown size={12} className={`text-slate-500 transition-transform ${isCalOpen ? 'rotate-180' : ''}`} />
+              {selectedDate || "Select Date"}
             </button>
 
             {isCalOpen && (
-              <div className="absolute top-full right-0 mt-2 w-72 bg-slate-800 border border-slate-700/60 rounded-lg shadow-2xl shadow-black/40 z-50 p-5 font-sans text-slate-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="font-semibold text-sm">{calendarData.month} <span className="text-slate-500 ml-1 font-mono">{calendarData.year}</span></div>
-                  <div className="flex gap-1">
-                    <button onClick={() => { const d = new Date(selectedDate); d.setMonth(d.getMonth() - 1); setSelectedDate(d.toISOString().split('T')[0]); }} className="p-1 hover:bg-slate-700/50 rounded"><ChevronLeft size={14} /></button>
-                    <button onClick={() => { const d = new Date(selectedDate); d.setMonth(d.getMonth() + 1); setSelectedDate(d.toISOString().split('T')[0]); }} className="p-1 hover:bg-slate-700/50 rounded"><ChevronRight size={14} /></button>
+              <div ref={calRef} className="absolute right-0 mt-2 bg-slate-900 border border-slate-700 rounded-lg p-4 z-50 shadow-lg w-80">
+                <div className="border-t border-slate-700 pt-3">
+                  <div className="text-[10px] font-mono text-slate-500 mb-2 uppercase">Available Dates ({dates.length}):</div>
+                  <div className="max-h-64 overflow-y-auto space-y-1">
+                    {dates.length > 0 ? (
+                      dates.map(date => (
+                        <button
+                          key={date}
+                          onClick={() => { setSelectedDate(date); setIsCalOpen(false); }}
+                          className={`block w-full text-left px-3 py-2 text-[11px] font-mono rounded transition-all ${selectedDate === date ? 'bg-blue-600/40 text-blue-300 border border-blue-500/50' : 'hover:bg-slate-700/40 text-slate-300 border border-slate-700/30'}`}
+                        >
+                          {date}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="text-slate-500 text-[10px] px-3 py-2">No dates available</div>
+                    )}
                   </div>
-                </div>
-                <div className="grid grid-cols-7 mb-2 text-center text-[10px] font-mono text-slate-500">
-                  {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <div key={d} className="py-1">{d}</div>)}
-                </div>
-                <div className="grid grid-cols-7 gap-0.5 text-[12px] font-mono">
-                  {Array.from({ length: calendarData.firstDayOfMonth }).map((_, i) => <div key={`e-${i}`} />)}
-                  {Array.from({ length: calendarData.daysInMonth }).map((_, i) => {
-                    const day = i + 1;
-                    const dStr = `${calendarData.year}-${(new Date(selectedDate).getMonth() + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-                    const isAvail = dates.includes(dStr);
-                    const isSel = selectedDate === dStr;
-                    return (
-                      <button key={day} onClick={() => { if (isAvail) { setSelectedDate(dStr); setIsCalOpen(false); } }}
-                        className={`py-1.5 rounded text-center transition-all ${isSel ? 'bg-blue-600 text-white font-bold' : isAvail ? 'hover:bg-slate-700/50 text-slate-300' : 'opacity-15 cursor-not-allowed'}`}
-                      >{day}</button>
-                    );
-                  })}
                 </div>
               </div>
             )}
@@ -607,7 +418,6 @@ export default function SwingTerminalDark() {
       {/* ─── FILTER BAR ─── */}
       <div className="bg-slate-900 border-b border-slate-800 px-5 py-2.5 shrink-0 overflow-x-auto">
         <div className="flex items-center gap-5 min-w-max">
-          {/* Search */}
           <div className="flex items-center gap-2 bg-slate-800 border border-slate-700/60 rounded-md px-3 py-1.5 focus-within:border-blue-500/50 transition-all w-44">
             <Search size={13} className="text-slate-500 shrink-0" />
             <input
@@ -621,30 +431,20 @@ export default function SwingTerminalDark() {
 
           <div className="h-5 w-px bg-[#1c2030]" />
 
-          <div className="flex items-center gap-2">
-            <FilterInput label="Score" value={minScore} onChange={setMinScore} placeholder="5" type="number" width="w-16" />
-            {minScore && !isNaN(Number(minScore)) && (
-              <span className="bg-slate-800 text-blue-400 font-mono text-xs px-2 py-1 rounded-md border border-slate-700/60 shadow-sm ml-1">
-                ({Object.entries(scoreCounts).reduce((acc, [score, count]) => Number(score) >= Number(minScore) ? acc + count : acc, 0)})
-              </span>
-            )}
-          </div>
+          <FilterInput label="Score" value={minScore} onChange={setMinScore} placeholder="5" type="number" width="w-14" />
+
+          <div className="h-5 w-px bg-[#1c2030]" />
+
+          <FilterInput label="Health" value={minHealth} onChange={setMinHealth} placeholder="50" type="number" width="w-14" />
 
           <div className="h-5 w-px bg-[#1c2030]" />
 
           <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider whitespace-nowrap">Dist %</span>
-            <input type="number" className="bg-slate-800 border border-slate-700/60 rounded-md focus:border-blue-500/60 outline-none px-2.5 py-1.5 w-14 text-slate-200 font-mono text-[11px] text-center placeholder:text-slate-600 transition-all" placeholder="Min" value={minDist} onChange={e => setMinDist(e.target.value)} />
+            <span className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider whitespace-nowrap">RSI</span>
+            <input type="number" className="bg-slate-800 border border-slate-700/60 rounded-md outline-none px-2.5 py-1.5 w-12 text-slate-200 font-mono text-[11px] text-center placeholder:text-slate-600" placeholder="Min" value={minRsi} onChange={e => setMinRsi(e.target.value)} />
             <span className="text-slate-600 text-[10px]">to</span>
-            <input type="number" className="bg-slate-800 border border-slate-700/60 rounded-md focus:border-blue-500/60 outline-none px-2.5 py-1.5 w-14 text-slate-200 font-mono text-[11px] text-center placeholder:text-slate-600 transition-all" placeholder="Max" value={maxDist} onChange={e => setMaxDist(e.target.value)} />
+            <input type="number" className="bg-slate-800 border border-slate-700/60 rounded-md outline-none px-2.5 py-1.5 w-12 text-slate-200 font-mono text-[11px] text-center placeholder:text-slate-600" placeholder="Max" value={maxRsi} onChange={e => setMaxRsi(e.target.value)} />
           </div>
-
-          <div className="h-5 w-px bg-[#1c2030]" />
-
-          <FilterSelect label="RSI" value={rsiZone} onChange={setRsiZone} options={[
-            { value: "All", label: "ALL ZONES" }, { value: "Healthy", label: "HEALTHY (40–60)" },
-            { value: "Oversold", label: "OVERSOLD (<40)" }, { value: "Overbought", label: "OVERBOUGHT (>60)" }
-          ]} />
 
           <div className="h-5 w-px bg-[#1c2030]" />
 
@@ -676,7 +476,7 @@ export default function SwingTerminalDark() {
           {hasActiveFilters && (
             <>
               <div className="h-5 w-px bg-[#1c2030]" />
-              <button onClick={resetFilters} className="flex items-center gap-1.5 text-[10px] font-semibold uppercase text-slate-500 hover:text-terminal-red tracking-wider transition-colors">
+              <button onClick={resetFilters} className="flex items-center gap-1.5 text-[10px] font-semibold uppercase text-slate-500 hover:text-red-400 tracking-wider transition-colors">
                 <RotateCcw size={11} /> Reset
               </button>
             </>
@@ -686,7 +486,7 @@ export default function SwingTerminalDark() {
 
       {/* ─── TABLE ─── */}
       <div className="flex-1 overflow-auto bg-slate-950 relative">
-        <table className="w-full text-left border-collapse min-w-[1800px]">
+        <table className="w-full text-left border-collapse min-w-[2000px]">
           <thead className="bg-slate-900 sticky top-0 z-20">
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id} className="border-b-2 border-slate-800">
@@ -697,11 +497,11 @@ export default function SwingTerminalDark() {
                     onClick={header.column.getToggleSortingHandler()}
                     style={{ width: header.getSize() }}
                   >
-                    <div className="flex items-center gap-1.5" style={{ justifyContent: ['LTP', 'Score', 'Swing Score', 'RSI_14', 'Weighted_Avg', 'Dist_Weighted_Avg_PCT'].includes(header.column.id) ? 'flex-end' : header.column.id === 'link' ? 'center' : 'flex-start' }}>
+                    <div className="flex items-center gap-1.5">
                       {flexRender(header.column.columnDef.header, header.getContext())}
                       {header.column.getCanSort() && (
                         <span className={`transition-opacity ${header.column.getIsSorted() ? 'opacity-100' : 'opacity-0 group-hover:opacity-40'}`}>
-                          {{ asc: <ChevronDown className="w-3.5 h-3.5 text-terminal-green rotate-180" />, desc: <ChevronDown className="w-3.5 h-3.5 text-terminal-red" /> }[header.column.getIsSorted() as string] ?? <ChevronDown className="w-3.5 h-3.5" />}
+                          {{ asc: <ChevronDown className="w-3.5 h-3.5 text-green-400 rotate-180" />, desc: <ChevronDown className="w-3.5 h-3.5 text-red-400" /> }[header.column.getIsSorted() as string] ?? <ChevronDown className="w-3.5 h-3.5" />}
                         </span>
                       )}
                     </div>
