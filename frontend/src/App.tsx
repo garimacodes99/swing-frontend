@@ -373,7 +373,7 @@ export default function SwingTerminalDark() {
   const columns = useMemo(() => [
     columnHelper.display({
       id: "sno",
-      header: "#",
+      header: "S.No",
       size: 48,
       cell: (info) => (
         <span className="font-mono text-slate-600 text-xs">{info.row.index + 1}</span>
