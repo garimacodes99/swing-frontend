@@ -40,49 +40,49 @@ const TickerAvatar = ({ ticker }: { ticker: string }) => {
 };
 
 /* ────────────────────────────────────────────────────────────
-   TAG BADGE
+   TAG BADGE — FIX #1: each tag has its own distinct color
    ──────────────────────────────────────────────────────────── */
 const tagColors: Record<string, string> = {
-  LCAP: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-  MCAP: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
-  SCAP: 'bg-slate-500/20 text-slate-300 border-slate-600/30',
-  MICAP: 'bg-slate-600/20 text-slate-400 border-slate-600/25',
-  N50: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  N100: 'bg-amber-500/15 text-amber-400 border-amber-600/25',
-  LEADER: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  GROWTH: 'bg-green-500/20 text-green-300 border-green-600/30',
-  EXPORT: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
-  TECH: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
-  PHARMA: 'bg-rose-500/20 text-rose-300 border-rose-500/25',
-  BANKX: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
-  INFRA: 'bg-orange-500/20 text-orange-300 border-orange-500/25',
-  DEFX: 'bg-red-500/20 text-red-300 border-red-500/25',
-  DUO30: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-  AUTO: 'bg-blue-400/15 text-blue-300 border-blue-400/25',
-  PSU: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-  FMCG: 'bg-green-600/20 text-green-300 border-green-600/30',
-  NBFC: 'bg-teal-500/20 text-teal-300 border-teal-500/30',
-  NICHE: 'bg-pink-500/20 text-pink-300 border-pink-500/30',
-  REAL: 'bg-stone-500/20 text-stone-300 border-stone-500/30',
-  PREM: 'bg-gold-500/20 text-yellow-200 border-yellow-600/30',
-  GOVCAP: 'bg-slate-600/20 text-slate-300 border-slate-500/30',
-  CHEMX: 'bg-lime-600/20 text-lime-300 border-lime-500/30',
-  BRANDX: 'bg-rose-400/20 text-rose-300 border-rose-400/30',
-  STRAT: 'bg-indigo-400/20 text-indigo-300 border-indigo-400/30',
-  RURALX: 'bg-green-700/20 text-green-400 border-green-600/30',
-  DOMEST: 'bg-slate-500/15 text-slate-300 border-slate-600/30',
-  CONSUM: 'bg-cyan-600/20 text-cyan-300 border-cyan-500/30',
-  SCALEUP: 'bg-violet-400/20 text-violet-300 border-violet-400/30',
-  URBNX: 'bg-blue-700/20 text-blue-300 border-blue-600/30',
-  INDST: 'bg-orange-600/20 text-orange-300 border-orange-600/30',
+  LCAP:            'bg-blue-500/20 text-blue-300 border-blue-500/30',
+  MCAP:            'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+  SCAP:            'bg-slate-500/20 text-slate-300 border-slate-600/30',
+  MICAP:           'bg-slate-600/20 text-slate-400 border-slate-600/25',
+  N50:             'bg-amber-500/20 text-amber-300 border-amber-500/30',
+  N100:            'bg-amber-500/15 text-amber-400 border-amber-600/25',
+  LEADER:          'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+  GROWTH:          'bg-green-500/20 text-green-300 border-green-600/30',
+  EXPORT:          'bg-violet-500/20 text-violet-300 border-violet-500/30',
+  TECH:            'bg-sky-500/20 text-sky-300 border-sky-500/30',
+  PHARMA:          'bg-rose-500/20 text-rose-300 border-rose-500/25',
+  BANKX:           'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+  INFRA:           'bg-orange-500/20 text-orange-300 border-orange-500/25',
+  DEFX:            'bg-red-500/20 text-red-300 border-red-500/25',
+  DUO30:           'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+  AUTO:            'bg-blue-400/15 text-blue-300 border-blue-400/25',
+  PSU:             'bg-purple-500/20 text-purple-300 border-purple-500/30',
+  FMCG:            'bg-green-600/20 text-green-300 border-green-600/30',
+  NBFC:            'bg-teal-500/20 text-teal-300 border-teal-500/30',
+  NICHE:           'bg-pink-500/20 text-pink-300 border-pink-500/30',
+  REAL:            'bg-stone-500/20 text-stone-300 border-stone-500/30',
+  PREM:            'bg-yellow-600/20 text-yellow-200 border-yellow-600/30',
+  GOVCAP:          'bg-slate-600/20 text-slate-300 border-slate-500/30',
+  CHEMX:           'bg-lime-600/20 text-lime-300 border-lime-500/30',
+  BRANDX:          'bg-rose-400/20 text-rose-300 border-rose-400/30',
+  STRAT:           'bg-indigo-400/20 text-indigo-300 border-indigo-400/30',
+  RURALX:          'bg-green-700/20 text-green-400 border-green-600/30',
+  DOMEST:          'bg-slate-500/15 text-slate-300 border-slate-600/30',
+  CONSUM:          'bg-cyan-600/20 text-cyan-300 border-cyan-500/30',
+  SCALEUP:         'bg-violet-400/20 text-violet-300 border-violet-400/30',
+  URBNX:           'bg-blue-700/20 text-blue-300 border-blue-600/30',
+  INDST:           'bg-orange-600/20 text-orange-300 border-orange-600/30',
   HIGH_CONVICTION: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  WATCHLIST: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  MOMENTUM_SETUP: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-  WEAK_SETUP: 'bg-slate-600/20 text-slate-400 border-slate-600/30',
+  WATCHLIST:       'bg-amber-500/20 text-amber-300 border-amber-500/30',
+  MOMENTUM_SETUP:  'bg-blue-500/20 text-blue-300 border-blue-500/30',
+  WEAK_SETUP:      'bg-slate-600/20 text-slate-400 border-slate-600/30',
 };
 
 const TagPill = ({ label }: { label: string }) => {
-  const color = tagColors[label] || 'bg-slate-700/25 text-slate-400 border-slate-600/30';
+  const color = tagColors[label] || 'bg-violet-700/20 text-violet-300 border-violet-600/30';
   return (
     <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10.5px] font-semibold tracking-wide border ${color} whitespace-nowrap leading-none`}>
       {label}
@@ -96,15 +96,15 @@ const TagPill = ({ label }: { label: string }) => {
 const SetupBadge = ({ value }: { value: string }) => {
   const setupMap: Record<string, string> = {
     HIGH_CONVICTION: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-    WATCHLIST: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-    MOMENTUM_SETUP: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
-    WEAK_SETUP: 'bg-slate-600/15 text-slate-400 border-slate-600/30',
+    WATCHLIST:       'bg-amber-500/15 text-amber-300 border-amber-500/30',
+    MOMENTUM_SETUP:  'bg-blue-500/15 text-blue-300 border-blue-500/30',
+    WEAK_SETUP:      'bg-slate-600/15 text-slate-400 border-slate-600/30',
   };
   const displayMap: Record<string, string> = {
     HIGH_CONVICTION: 'HIGH CONVICTION',
-    WATCHLIST: 'WATCHLIST',
-    MOMENTUM_SETUP: 'MOMENTUM',
-    WEAK_SETUP: 'WEAK',
+    WATCHLIST:       'WATCHLIST',
+    MOMENTUM_SETUP:  'MOMENTUM',
+    WEAK_SETUP:      'WEAK',
   };
   const color = setupMap[value] || 'bg-slate-700/20 text-slate-400 border-slate-600/30';
   const label = displayMap[value] || value;
@@ -132,12 +132,24 @@ const SwingScoreBadge = ({ score }: { score: number }) => {
 };
 
 /* ────────────────────────────────────────────────────────────
-   HEALTH SCORE BADGE
+   HEALTH SCORE BADGE — FIX #2: color-coded by value range
    ──────────────────────────────────────────────────────────── */
 const HealthBadge = ({ score }: { score: number | null }) => {
-  if (score === null || score === undefined) return <span className="text-slate-600 text-xs font-mono">—</span>;
-  const color = score >= 80 ? 'text-emerald-400' : score >= 60 ? 'text-amber-400' : score >= 40 ? 'text-orange-400' : 'text-red-400';
-  return <span className={`font-bold font-mono text-sm ${color}`}>{score}</span>;
+  if (score === null || score === undefined)
+    return <span className="text-slate-600 text-xs font-mono">—</span>;
+
+  // color + background pill so the value pops visually
+  const { text, bg, border } =
+    score >= 80 ? { text: 'text-emerald-300', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30' } :
+    score >= 60 ? { text: 'text-amber-300',   bg: 'bg-amber-500/15',   border: 'border-amber-500/30'   } :
+    score >= 40 ? { text: 'text-orange-300',  bg: 'bg-orange-500/15',  border: 'border-orange-500/30'  } :
+                  { text: 'text-red-400',      bg: 'bg-red-500/15',     border: 'border-red-500/25'     };
+
+  return (
+    <span className={`inline-flex items-center justify-center w-10 h-7 rounded-md border font-bold font-mono text-sm ${text} ${bg} ${border}`}>
+      {score}
+    </span>
+  );
 };
 
 /* ────────────────────────────────────────────────────────────
@@ -167,43 +179,68 @@ const DistCell = ({ pct, status }: { pct: number; status: string }) => {
 const RsiCell = ({ rsi }: { rsi: number }) => {
   let color = "text-slate-300";
   let label = "";
-  if (rsi > 70) { color = "text-red-400"; label = "OB"; }
+  if (rsi > 70)      { color = "text-red-400";   label = "OB"; }
   else if (rsi > 60) { color = "text-orange-400"; }
-  else if (rsi < 30) { color = "text-green-400"; label = "OS"; }
-  else if (rsi < 40) { color = "text-lime-400"; }
+  else if (rsi < 30) { color = "text-green-400";  label = "OS"; }
+  else if (rsi < 40) { color = "text-lime-400";   }
   return (
     <div className="flex items-center gap-1.5">
       <span className={`font-mono font-semibold text-sm ${color}`}>{rsi.toFixed(1)}</span>
-      {label && <span className={`text-[9px] font-bold px-1 rounded ${rsi > 70 ? 'bg-red-500/15 text-red-400' : 'bg-green-500/15 text-green-400'}`}>{label}</span>}
+      {label && (
+        <span className={`text-[9px] font-bold px-1 rounded ${rsi > 70 ? 'bg-red-500/15 text-red-400' : 'bg-green-500/15 text-green-400'}`}>
+          {label}
+        </span>
+      )}
     </div>
   );
 };
 
 /* ────────────────────────────────────────────────────────────
-   TREND / MOMENTUM CELL
+   TREND CELL — FIX #3: "Strong Bullish" now renders green,
+   "Strong Bearish" renders red — any value containing
+   "bullish" / "bearish" is caught regardless of prefix.
    ──────────────────────────────────────────────────────────── */
 const TrendCell = ({ value }: { value: string }) => {
   const normalized = (value || '').toLowerCase();
-  const isBull = normalized === 'bullish';
-  const isBear = normalized === 'bearish';
+  const isBull    = normalized.includes('bullish');
+  const isBear    = normalized.includes('bearish');
+  const isStrong  = normalized.includes('strong');
 
   if (isBull) return (
-    <div style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.30)' }}
-      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md">
+    <div
+      style={{
+        background: isStrong ? 'rgba(16,185,129,0.20)' : 'rgba(16,185,129,0.12)',
+        border: `1px solid rgba(16,185,129,${isStrong ? '0.45' : '0.30'})`,
+      }}
+      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md"
+    >
       <TrendingUp size={11} className="text-emerald-400 shrink-0" />
-      <span className="font-bold text-[10.5px] uppercase tracking-wider text-emerald-300">Bullish</span>
+      <span className="font-bold text-[10.5px] uppercase tracking-wider text-emerald-300">
+        {isStrong ? 'Strong Bullish' : 'Bullish'}
+      </span>
     </div>
   );
+
   if (isBear) return (
-    <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.30)' }}
-      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md">
+    <div
+      style={{
+        background: isStrong ? 'rgba(239,68,68,0.20)' : 'rgba(239,68,68,0.12)',
+        border: `1px solid rgba(239,68,68,${isStrong ? '0.45' : '0.30'})`,
+      }}
+      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md"
+    >
       <TrendingDown size={11} className="text-red-400 shrink-0" />
-      <span className="font-bold text-[10.5px] uppercase tracking-wider text-red-400">Bearish</span>
+      <span className="font-bold text-[10.5px] uppercase tracking-wider text-red-400">
+        {isStrong ? 'Strong Bearish' : 'Bearish'}
+      </span>
     </div>
   );
+
   return (
-    <div style={{ background: 'rgba(100,116,139,0.12)', border: '1px solid rgba(100,116,139,0.20)' }}
-      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md">
+    <div
+      style={{ background: 'rgba(100,116,139,0.12)', border: '1px solid rgba(100,116,139,0.20)' }}
+      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md"
+    >
       <Minus size={11} className="text-slate-500 shrink-0" />
       <span className="font-bold text-[10.5px] uppercase tracking-wider text-slate-500">{value || 'Neutral'}</span>
     </div>
@@ -211,25 +248,26 @@ const TrendCell = ({ value }: { value: string }) => {
 };
 
 /* ────────────────────────────────────────────────────────────
-   VOLUME CELL
+   VOLUME CELL — FIX #4: NORMAL is now sky-blue instead of grey
    ──────────────────────────────────────────────────────────── */
 const VolumeCell = ({ strength }: { strength: string }) => {
   const map: Record<string, { style: React.CSSProperties; dotColor: string; textClass: string; label: string }> = {
     VERY_HIGH: {
       style: { background: 'rgba(16,185,129,0.13)', border: '1px solid rgba(16,185,129,0.32)' },
-      dotColor: '#34d399', textClass: 'text-emerald-300', label: 'VERY HIGH'
+      dotColor: '#34d399', textClass: 'text-emerald-300', label: 'VERY HIGH',
     },
     HIGH: {
       style: { background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.28)' },
-      dotColor: '#4ade80', textClass: 'text-green-400', label: 'HIGH'
+      dotColor: '#4ade80', textClass: 'text-green-400', label: 'HIGH',
     },
+    // ── changed from grey → sky-blue ──
     NORMAL: {
-      style: { background: 'rgba(71,85,105,0.20)', border: '1px solid rgba(71,85,105,0.35)' },
-      dotColor: '#94a3b8', textClass: 'text-slate-400', label: 'NORMAL'
+      style: { background: 'rgba(56,189,248,0.10)', border: '1px solid rgba(56,189,248,0.28)' },
+      dotColor: '#38bdf8', textClass: 'text-sky-400', label: 'NORMAL',
     },
     LOW: {
       style: { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.22)' },
-      dotColor: '#f87171', textClass: 'text-red-400', label: 'LOW'
+      dotColor: '#f87171', textClass: 'text-red-400', label: 'LOW',
     },
   };
   const s = map[strength] || map.NORMAL;
@@ -265,8 +303,9 @@ const FilterSelect = ({ label, value, onChange, options }: {
   <div className="flex items-center gap-2">
     <span className="text-[10px] uppercase text-slate-500 font-semibold tracking-widest whitespace-nowrap">{label}</span>
     <select
-      className={`bg-[#0d1117] border rounded-md outline-none px-2.5 py-1.5 text-xs cursor-pointer font-mono transition-all hover:border-slate-500/70 ${value !== 'All' ? 'border-blue-500/40 text-blue-300 bg-blue-500/5' : 'border-slate-700/50 text-slate-300'
-        } focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/15`}
+      className={`bg-[#0d1117] border rounded-md outline-none px-2.5 py-1.5 text-xs cursor-pointer font-mono transition-all hover:border-slate-500/70 ${
+        value !== 'All' ? 'border-blue-500/40 text-blue-300 bg-blue-500/5' : 'border-slate-700/50 text-slate-300'
+      } focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/15`}
       value={value}
       onChange={e => onChange(e.target.value)}
     >
@@ -364,11 +403,11 @@ export default function SwingTerminalDark() {
       if (maxDist && (row.distance_pct || 0) > Number(maxDist)) return false;
       if (rsiZone !== "All") {
         const rsi = row.rsi_14 || 0;
-        if (rsiZone === "Healthy" && (rsi < 40 || rsi > 60)) return false;
-        if (rsiZone === "Oversold" && rsi >= 40) return false;
-        if (rsiZone === "Overbought" && rsi <= 60) return false;
+        if (rsiZone === "Healthy"    && (rsi < 40 || rsi > 60)) return false;
+        if (rsiZone === "Oversold"   && rsi >= 40)               return false;
+        if (rsiZone === "Overbought" && rsi <= 60)               return false;
       }
-      if (trend !== "All" && (row.trend_status || '').toLowerCase() !== trend.toLowerCase()) return false;
+      if (trend !== "All" && !(row.trend_status || '').toLowerCase().includes(trend.toLowerCase())) return false;
       if (setupFilter !== "All" && row.setup_type !== setupFilter) return false;
       if (volumeStrength !== "All" && row.volume_strength !== volumeStrength) return false;
       if (momentumStatus !== "All" && (row.momentum_status || '').toLowerCase() !== momentumStatus.toLowerCase()) return false;
@@ -391,8 +430,12 @@ export default function SwingTerminalDark() {
   }, [filteredData]);
 
   // Stats
-  const bullishCount = useMemo(() => filteredData.filter(r => (r.trend_status || '').toLowerCase() === 'bullish').length, [filteredData]);
-  const highConvCount = useMemo(() => filteredData.filter(r => r.setup_type === 'HIGH_CONVICTION').length, [filteredData]);
+  const bullishCount = useMemo(() =>
+    filteredData.filter(r => (r.trend_status || '').toLowerCase().includes('bullish')).length,
+  [filteredData]);
+  const highConvCount = useMemo(() =>
+    filteredData.filter(r => r.setup_type === 'HIGH_CONVICTION').length,
+  [filteredData]);
 
   // ── TABLE COLUMNS ──
   const columns = useMemo(() => [
@@ -436,7 +479,7 @@ export default function SwingTerminalDark() {
     }),
     columnHelper.accessor("trend_status", {
       header: "Trend",
-      size: 110,
+      size: 130,
       cell: info => <TrendCell value={info.getValue() || 'Neutral'} />,
     }),
     columnHelper.accessor("momentum_status", {
@@ -446,10 +489,18 @@ export default function SwingTerminalDark() {
         const val = info.getValue() || 'Neutral';
         const norm = val.toLowerCase();
         const map: Record<string, string> = {
-          bullish: 'text-emerald-400', hot: 'text-amber-400', recovery: 'text-blue-400',
-          bearish: 'text-red-400', neutral: 'text-slate-500', healthy: 'text-cyan-400'
+          bullish:  'text-emerald-400',
+          hot:      'text-amber-400',
+          recovery: 'text-blue-400',
+          bearish:  'text-red-400',
+          neutral:  'text-slate-500',
+          healthy:  'text-cyan-400',
         };
-        return <span className={`font-semibold text-[11px] uppercase tracking-wide ${map[norm] || 'text-slate-400'}`}>{val}</span>;
+        return (
+          <span className={`font-semibold text-[11px] uppercase tracking-wide ${map[norm] || 'text-slate-400'}`}>
+            {val}
+          </span>
+        );
       },
     }),
     columnHelper.accessor("rsi_14", {
@@ -539,7 +590,9 @@ export default function SwingTerminalDark() {
     const csv = [
       ["#", "Symbol", "LTP", "Health", "Trend", "Momentum", "RSI", "W.Avg", "Dist%", "Vol", "Swing Score", "Setup", "Tags"].join(","),
       ...filteredData.map((row, idx) =>
-        [idx + 1, row.ticker, row.ltp, row.health_score, row.trend_status, row.momentum_status, row.rsi_14, row.weighted_avg, row.distance_pct, row.volume_strength, row.swing_score, row.setup_type, (row.tags || "").replace(/,/g, ";")].join(",")
+        [idx + 1, row.ticker, row.ltp, row.health_score, row.trend_status, row.momentum_status,
+         row.rsi_14, row.weighted_avg, row.distance_pct, row.volume_strength,
+         row.swing_score, row.setup_type, (row.tags || "").replace(/,/g, ";")].join(",")
       ),
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -569,7 +622,9 @@ export default function SwingTerminalDark() {
             <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
               <Zap size={13} className="text-white" />
             </div>
-            <span className="font-black text-[13px] uppercase tracking-[0.15em] text-white">Swing<span className="text-blue-400">//</span>Logic</span>
+            <span className="font-black text-[13px] uppercase tracking-[0.15em] text-white">
+              Swing<span className="text-blue-400">//</span>Logic
+            </span>
           </div>
           <div className="flex items-center gap-1.5 ml-1">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50" />
@@ -581,8 +636,8 @@ export default function SwingTerminalDark() {
         <div className="flex items-center gap-2">
           {/* Stats */}
           <div className="hidden lg:flex items-center gap-2 mr-2">
-            <StatChip label="Signals" value={filteredData.length} />
-            <StatChip label="Bullish" value={bullishCount} accent="bg-emerald-400" />
+            <StatChip label="Signals"    value={filteredData.length} />
+            <StatChip label="Bullish"    value={bullishCount}  accent="bg-emerald-400" />
             <StatChip label="High Conv." value={highConvCount} accent="bg-blue-400" />
           </div>
 
@@ -609,9 +664,11 @@ export default function SwingTerminalDark() {
                     <button
                       key={date}
                       onClick={() => { setSelectedDate(date); setIsCalOpen(false); }}
-                      className={`block w-full text-left px-3 py-2 text-[11px] font-mono rounded-lg transition-all ${selectedDate === date
-                        ? 'bg-blue-600/25 text-blue-300 border border-blue-500/30'
-                        : 'hover:bg-white/[0.04] text-slate-400 border border-transparent hover:text-slate-200'}`}
+                      className={`block w-full text-left px-3 py-2 text-[11px] font-mono rounded-lg transition-all ${
+                        selectedDate === date
+                          ? 'bg-blue-600/25 text-blue-300 border border-blue-500/30'
+                          : 'hover:bg-white/[0.04] text-slate-400 border border-transparent hover:text-slate-200'
+                      }`}
                     >
                       {date}
                     </button>
@@ -654,7 +711,7 @@ export default function SwingTerminalDark() {
           </div>
 
           <div className="h-4 w-px bg-white/[0.05]" />
-          <FilterInput label="Score ≥" value={minScore} onChange={setMinScore} placeholder="5" type="number" width="w-12" />
+          <FilterInput label="Score ≥"  value={minScore}  onChange={setMinScore}  placeholder="5"  type="number" width="w-12" />
           <div className="h-4 w-px bg-white/[0.05]" />
           <FilterInput label="Health ≥" value={minHealth} onChange={setMinHealth} placeholder="50" type="number" width="w-12" />
           <div className="h-4 w-px bg-white/[0.05]" />
@@ -677,25 +734,33 @@ export default function SwingTerminalDark() {
 
           <div className="h-4 w-px bg-white/[0.05]" />
           <FilterSelect label="Trend" value={trend} onChange={setTrend} options={[
-            { value: "All", label: "ALL" }, { value: "Bullish", label: "↑ BULLISH" }, { value: "Bearish", label: "↓ BEARISH" }
+            { value: "All",     label: "ALL"       },
+            { value: "Bullish", label: "↑ BULLISH" },
+            { value: "Bearish", label: "↓ BEARISH" },
           ]} />
           <div className="h-4 w-px bg-white/[0.05]" />
           <FilterSelect label="Setup" value={setupFilter} onChange={setSetupFilter} options={[
-            { value: "All", label: "ALL SETUPS" },
-            { value: "HIGH_CONVICTION", label: "HIGH CONVICTION" },
-            { value: "WATCHLIST", label: "WATCHLIST" },
-            { value: "MOMENTUM_SETUP", label: "MOMENTUM" },
-            { value: "WEAK_SETUP", label: "WEAK SETUP" }
+            { value: "All",              label: "ALL SETUPS"      },
+            { value: "HIGH_CONVICTION",  label: "HIGH CONVICTION" },
+            { value: "WATCHLIST",        label: "WATCHLIST"       },
+            { value: "MOMENTUM_SETUP",   label: "MOMENTUM"        },
+            { value: "WEAK_SETUP",       label: "WEAK SETUP"      },
           ]} />
           <div className="h-4 w-px bg-white/[0.05]" />
           <FilterSelect label="Mkt Cap" value={marketCap} onChange={setMarketCap} options={[
-            { value: "All", label: "ANY" }, { value: "Large", label: "LARGE" },
-            { value: "Mid", label: "MID" }, { value: "Small", label: "SMALL" }, { value: "Micro", label: "MICRO" }
+            { value: "All",   label: "ANY"   },
+            { value: "Large", label: "LARGE" },
+            { value: "Mid",   label: "MID"   },
+            { value: "Small", label: "SMALL" },
+            { value: "Micro", label: "MICRO" },
           ]} />
           <div className="h-4 w-px bg-white/[0.05]" />
           <FilterSelect label="Vol" value={volumeStrength} onChange={setVolumeStrength} options={[
-            { value: "All", label: "ALL" }, { value: "VERY_HIGH", label: "VERY HIGH" },
-            { value: "HIGH", label: "HIGH" }, { value: "NORMAL", label: "NORMAL" }, { value: "LOW", label: "LOW" }
+            { value: "All",       label: "ALL"       },
+            { value: "VERY_HIGH", label: "VERY HIGH" },
+            { value: "HIGH",      label: "HIGH"      },
+            { value: "NORMAL",    label: "NORMAL"    },
+            { value: "LOW",       label: "LOW"       },
           ]} />
           <div className="h-4 w-px bg-white/[0.05]" />
           <FilterInput label="Tags" value={tagsInput} onChange={setTagsInput} placeholder="N50, PHARMA" type="text" width="w-28" />
@@ -732,8 +797,8 @@ export default function SwingTerminalDark() {
                       {header.column.getCanSort() && (
                         <span className={`transition-opacity ml-0.5 ${header.column.getIsSorted() ? 'opacity-100' : 'opacity-0 group-hover:opacity-30'}`}>
                           {{
-                            asc: <ChevronDown className="w-3 h-3 text-emerald-400 rotate-180" />,
-                            desc: <ChevronDown className="w-3 h-3 text-red-400" />
+                            asc:  <ChevronDown className="w-3 h-3 text-emerald-400 rotate-180" />,
+                            desc: <ChevronDown className="w-3 h-3 text-red-400" />,
                           }[header.column.getIsSorted() as string] ?? <ChevronDown className="w-3 h-3" />}
                         </span>
                       )}
