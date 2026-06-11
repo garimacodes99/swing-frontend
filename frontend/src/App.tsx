@@ -94,7 +94,7 @@ const TagPill = ({ label }: { label: string }) => {
   const normalizedKey = label.trim().toUpperCase();
   const color = tagColors[normalizedKey] || 'bg-violet-700/20 text-violet-300 border-violet-600/30';
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10.5px] font-semibold tracking-wide border ${color} whitespace-nowrap leading-none`}>
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[12px] font-semibold tracking-wide border ${color} whitespace-nowrap leading-none`}>
       {label.trim()}
     </span>
   );
