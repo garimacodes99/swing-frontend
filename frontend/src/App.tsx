@@ -148,10 +148,10 @@ const HealthBadge = ({ score }: { score: number | null }) => {
     return <span className="text-slate-600 text-xs font-mono">—</span>;
 
   const { text, bg, border } =
-    score >= 80 ? { text: 'text-emerald-300', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30' } :
-    score >= 60 ? { text: 'text-amber-300',   bg: 'bg-amber-500/15',   border: 'border-amber-500/30'   } :
-    score >= 40 ? { text: 'text-orange-300',  bg: 'bg-orange-500/15',  border: 'border-orange-500/30'  } :
-                  { text: 'text-red-400',      bg: 'bg-red-500/15',     border: 'border-red-500/25'     };
+    score >= 8 ? { text: 'text-white', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30' } :
+    score >= 6 ? { text: 'text-white',   bg: 'bg-amber-500/15',   border: 'border-amber-500/30'   } :
+    score >= 4 ? { text: 'text-white',  bg: 'bg-orange-500/15',  border: 'border-orange-500/30'  } :
+                  { text: 'text-white',      bg: 'bg-red-500/15',     border: 'border-red-500/25'     };
 
   return (
     <span className={`inline-flex items-center justify-center w-10 h-7 rounded-md border font-bold font-mono text-sm ${text} ${bg} ${border}`}>
