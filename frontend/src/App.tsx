@@ -90,12 +90,11 @@ const tagColors: Record<string, string> = {
 };
 
 const TagPill = ({ label }: { label: string }) => {
-  // FIXED: Force uppercase mapping so the colors trigger correctly regardless of API formatting
-  const normalizedKey = label.trim().toUpperCase();
-  const color = tagColors[normalizedKey] || 'bg-violet-700/20 text-violet-300 border-violet-600/30';
+  const color = tagColors[label] || 'bg-violet-700/20 text-violet-300 border-violet-600/30';
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[12px] font-semibold tracking-wide border ${color} whitespace-nowrap leading-none`}>
-      {label.trim()}
+    // CHANGE 1: font size increased from text-[10.5px] to text-[12px], padding increased slightly
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[12.5px] font-semibold tracking-wide border ${color} whitespace-nowrap leading-none`}>
+      {label}
     </span>
   );
 };
@@ -286,10 +285,11 @@ const VolumeCell = ({ strength }: { strength: string }) => {
 };
 
 /* ────────────────────────────────────────────────────────────
-   TAGS CELL — renders each tag as a colored pill
+   TAGS CELL
+   CHANGE 2: splits on both | and , to handle pipe-separated DB values
    ──────────────────────────────────────────────────────────── */
 const TagsCell = ({ tagsStr }: { tagsStr: string }) => {
-  const tagList = (tagsStr || "").split(",").map(t => t.trim()).filter(Boolean);
+  const tagList = (tagsStr || "").split(/[|,]/).map(t => t.trim()).filter(Boolean);
   const visible = tagList.slice(0, 4);
   const more = tagList.length - 4;
   return (
@@ -438,7 +438,8 @@ export default function SwingTerminalDark() {
       if (distanceStatus !== "All" && row.distance_status !== distanceStatus) return false;
       if (tagsInput) {
         const filterTags = tagsInput.split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
-        const rowTags = (row.tags || '').split(',').map(t => t.trim().toUpperCase());
+        // CHANGE 2 also applies here: split on | or , for tag filtering
+        const rowTags = (row.tags || '').split(/[|,]/).map(t => t.trim().toUpperCase());
         if (!filterTags.every(ft => rowTags.includes(ft))) return false;
       }
       return true;
@@ -448,7 +449,7 @@ export default function SwingTerminalDark() {
   const allUniqueTags = useMemo(() => {
     const tags = new Set<string>();
     filteredData.forEach(row => {
-      if (row.tags) row.tags.split(",").map(t => t.trim()).filter(Boolean).forEach(tag => tags.add(tag));
+      if (row.tags) row.tags.split(/[|,]/).map(t => t.trim()).filter(Boolean).forEach(tag => tags.add(tag));
     });
     return Array.from(tags);
   }, [filteredData]);
@@ -564,13 +565,11 @@ export default function SwingTerminalDark() {
       size: 160,
       cell: info => <SetupBadge value={info.getValue() || 'NEUTRAL'} />,
     }),
-    // ── TAGS COLUMN — colored pills, NOT plain text ──
     columnHelper.accessor("tags", {
       header: "Tags",
       size: 260,
       cell: info => <TagsCell tagsStr={info.getValue() || ""} />,
     }),
-    // ── LINK COLUMN — Google Finance redirect ──
     columnHelper.display({
       id: "link",
       header: "Link",
